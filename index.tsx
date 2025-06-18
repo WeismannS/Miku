@@ -1,81 +1,7 @@
-type Props = {
-    children?: (string | VNode)[];
-} & MikuAttributes;
-
-type MikuAttributes = {
-    [k: string]: string | number | bigint | boolean;
-} | null;
-type VNode = {
-    type: string;
-    props: Props;
-};
-
-interface FiberNode extends VNode {
-    sibling?: FiberNode;
-    child?: FiberNode;
-    parent?: FiberNode;
-}
-
-type functionComponent = (props: Props) => VNode;
-
-function render(elm: VNode | string, container: HTMLElement | Text | Element) {
-    if (typeof elm == "string") {
-        container.appendChild(document.createTextNode(elm));
-        return;
-    }
-    if (elm.type == "frag") {
-        if (elm.props.children) {
-            for (let child of elm.props.children) render(child, container);
-        }
-        return;
-    }
-    const element = document.createElement(elm.type);
-    for (let [key, value] of Object.entries(elm.props)) {
-        if (key === "children") continue;
-        if (typeof value == "boolean" && value == true)
-            (element as HTMLElement).setAttribute(key, "");
-        else if (typeof value !== "boolean")
-            (element as HTMLElement).setAttribute(key, String(value));
-    }
-    if (elm.props.children) {
-        for (let child of elm.props.children) render(child, element);
-    }
-    container.appendChild(element);
-}
-
-function createElement(
-    elm: functionComponent | string,
-    props: MikuAttributes,
-    ...children: (VNode | string)[]
-): VNode {
-    const properties = {
-        children: children.length > 0 ? children : undefined,
-        ...props,
-    } as Props;
-    if (typeof elm == "function") return elm(properties);
-    else {
-        return {
-            type: elm,
-            props: properties,
-        };
-    }
-}
-
-const Fragment: functionComponent = (props) => {
-    return {
-        type: "frag",
-        props,
-    };
-};
-
-const Miku = {
-    createElement,
-    Fragment,
-};
-
+import * as Miku from "./src/Factory/Factory.ts";
 const aa = document.body.querySelector("#app");
 
-function List({ username }: Props) {
+function List({ username } :{username : string}) {
     console.log(username);
     return (
         <>
@@ -89,7 +15,7 @@ function List({ username }: Props) {
 }
 function Header() {
     return (
-        <div onClick={() => console.log("hello")}>
+        <div onClick={() => console.log("hello")} className="hello">
             <h1>First Section of the Imperial Family</h1>
             <p>
                 Lorem Ipsum is simply dummy text of the printing and typesetting
@@ -144,11 +70,11 @@ function Header() {
             </p>
 
             <ul>
-                <List checked={true} username="hello" />{" "}
+                <List username="hello" />{" "}
             </ul>
         </div>
     );
 }
 
 <h1></h1>;
-if (aa) render(Header(), aa);
+if (aa) Miku.render(Header(), aa);
