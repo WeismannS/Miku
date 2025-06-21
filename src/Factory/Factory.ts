@@ -4,11 +4,17 @@ import {
     MikuAttributes,
     Props,
     FunctionComponent,
+    TextVNode,
 } from "../types/types";
 
-function render(elm: VNode | string, container: HTMLElement | Text | Element) {
-    if (typeof elm == "string") {
-        container.appendChild(document.createTextNode(elm));
+function isTextNode(elm : VNode | TextVNode) : elm is TextVNode
+{
+  return elm.type == "TEXT_NODE"
+}
+
+function render(elm: VNode | TextVNode, container: HTMLElement | Text | Element) {
+    if (isTextNode(elm)) {
+        container.appendChild(document.createTextNode(elm.props.nodeValue));
         return;
     }
     if (elm.type == "frag") {
@@ -37,7 +43,11 @@ function createElement(
     ...children: (VNode | string)[]
 ): VNode {
     const properties = {
-        children: children.length > 0 ? children : undefined,
+        children: children.length > 0 ? children.map(e=> {
+          if (typeof e == "string")
+              return { type: "TEXT_NODE", props: {nodeValue : e} }
+          return e;
+        }) : undefined,
         ...(props || {}),
     } as Props;
     if (typeof elm == "function") return elm(properties);
