@@ -1,4 +1,5 @@
-import { FiberNode } from "../types/types";
+import { FiberNode} from "../types/types";
+import { isTextNode, setAttributes } from "../utils/utils";
 
 
 
@@ -14,7 +15,15 @@ const workLoop: IdleRequestCallback = function (deadline) {
     requestIdleCallback(workLoop);
 }
 
-
+function createDom(fiber : FiberNode) {
+  const dom =
+    isTextNode(fiber)
+      ? document.createTextNode("")
+      : document.createElement(fiber.type)
+  if (dom.nodeType == Node.ELEMENT_NODE)
+    setAttributes(dom as Element, fiber.props)
+  return dom
+}
 
 function performUnitOfWork(fiber: FiberNode | null) : FiberNode | null
 {

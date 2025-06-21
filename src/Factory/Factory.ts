@@ -6,11 +6,9 @@ import {
     FunctionComponent,
     TextVNode,
 } from "../types/types";
+import { isTextNode, setAttributes } from "../utils/utils";
 
-function isTextNode(elm : VNode | TextVNode) : elm is TextVNode
-{
-  return elm.type == "TEXT_NODE"
-}
+
 
 function render(elm: VNode | TextVNode, container: HTMLElement | Text | Element) {
     if (isTextNode(elm)) {
@@ -24,13 +22,7 @@ function render(elm: VNode | TextVNode, container: HTMLElement | Text | Element)
         return;
     }
     const element = document.createElement(elm.type);
-    for (let [key, value] of Object.entries(elm.props)) {
-        if (key === "children") continue;
-        if (typeof value == "boolean" && value == true)
-            (element as HTMLElement).setAttribute(key, "");
-        else if (typeof value !== "boolean")
-            (element as HTMLElement).setAttribute(key, String(value));
-    }
+    setAttributes(element, elm.props)
     if (elm.props.children) {
         for (let child of elm.props.children) render(child, element);
     }
@@ -41,7 +33,7 @@ function createElement(
     elm: FunctionComponent | string,
     props: MikuAttributes | null,
     ...children: (VNode | string)[]
-): VNode {
+): VNode | TextVNode {
     const properties = {
         children: children.length > 0 ? children.map(e=> {
           if (typeof e == "string")
