@@ -1,4 +1,5 @@
-import { FiberNode} from "../types/types";
+import { createElement } from "../Factory/Factory";
+import { FiberNode, TextVNode, VNode} from "../types/types";
 import { isTextNode, setAttributes } from "../utils/utils";
 
 
@@ -25,7 +26,45 @@ function createDom(fiber : FiberNode) {
   return dom
 }
 
-function performUnitOfWork(fiber: FiberNode | null) : FiberNode | null
-{
-    return null;
+function performUnitOfWork(fiber: FiberNode | null): FiberNode | null {
+    if (!fiber)
+        return null;
+    if (!fiber?.dom)
+        fiber.dom = createDom(fiber);
+    if (fiber.parent)
+        fiber.parent.dom?.appendChild(fiber.dom)
+    const elements = fiber.props.children
+    if (!elements)
+        return null;
+    let index = 0
+    let prevSibling : FiberNode | null = null
+    while (index < elements.length) {
+        const element = elements[index]
+        const newFiber : FiberNode = {
+            type: element.type,
+            props: element.props,
+            parent: fiber,
+            dom: null,
+        }
+        prevSibling = newFiber
+        if (index === 0) {
+            fiber.child = newFiber
+        } else {
+            prevSibling.sibling = newFiber
+        }
+        index++
+    }
 }
+
+function render(elm: VNode | TextVNode, container: Text | Element) {
+  nextUnitOfWork = {
+    dom: container,
+    type: "",
+    props :
+    {
+      children : [elm]
+    }
+  }
+}
+
+

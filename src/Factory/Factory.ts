@@ -10,24 +10,6 @@ import { isTextNode, setAttributes } from "../utils/utils";
 
 
 
-function render(elm: VNode | TextVNode, container: HTMLElement | Text | Element) {
-    if (isTextNode(elm)) {
-        container.appendChild(document.createTextNode(elm.props.nodeValue));
-        return;
-    }
-    if (elm.type == "frag") {
-        if (elm.props.children) {
-            for (let child of elm.props.children) render(child, container);
-        }
-        return;
-    }
-    const element = document.createElement(elm.type);
-    setAttributes(element, elm.props)
-    if (elm.props.children) {
-        for (let child of elm.props.children) render(child, element);
-    }
-    container.appendChild(element);
-}
 
 function createElement(
     elm: FunctionComponent | string,
@@ -58,4 +40,4 @@ const Fragment: FunctionComponent = (props: Props) => {
     };
 };
 
-export { Fragment, createElement, render };
+export { Fragment, createElement };

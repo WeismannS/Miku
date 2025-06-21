@@ -19,6 +19,7 @@ export type TextVNode = {
     }
 }
 export interface FiberNode extends VNode {
+    dom: Element | Text | null;
     sibling?: FiberNode;
     child?: FiberNode;
     parent?: FiberNode;
