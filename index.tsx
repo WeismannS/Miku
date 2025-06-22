@@ -16,7 +16,7 @@ function List({ username } :{username : string}) {
 }
 function Header() {
     return (
-        <div onClick={() => console.log("hello")} className="hello">
+        <div  className="hello">
             <h1>First Section of the Imperial Family</h1>
             <p>
                 Lorem Ipsum is simply dummy text of the printing and typesetting

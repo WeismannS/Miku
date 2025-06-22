@@ -14,65 +14,68 @@ export const workLoop: IdleRequestCallback = function (deadline) {
         commitRoot();
     requestIdleCallback(workLoop);
 }
+function performUnitOfWork(fiber: FiberNode | null): Maybe<FiberNode> {
+    if (!fiber)
+        return null;
+    if (!fiber.dom)
+        fiber.dom = createDom(fiber);
+    const elements = fiber.props.children;
+    if (elements && elements.length > 0)
+        recouncilChildren(elements, fiber);
+    if (fiber.child) 
+        return fiber.child;
+    return findNextSibling(fiber);
+}
 
-function createDom(fiber : FiberNode) {
+function findNextSibling(fiber: FiberNode): Maybe<FiberNode> {
+    let currentFiber: Maybe<FiberNode> = fiber;
+    
+    while (currentFiber) {
+        if (currentFiber.sibling) {
+            return currentFiber.sibling;
+        }
+        currentFiber = currentFiber.parent;
+    }
+    
+    return null;
+}
+export function createDom(fiber : FiberNode) {
     const dom = isTextNode(fiber)
         ? document.createTextNode(fiber.props.nodeValue)
         : document.createElement(fiber.type)
     
     if (dom.nodeType == Node.ELEMENT_NODE)
         setAttributes(dom as Element, fiber.props)
-    
+    else
+    {
+      console.log(fiber.props.nodeValue)
+    }
     return dom
 }
+    
+function recouncilChildren(elements: VNode[], fiber: FiberNode) {
+    let index = 0;
+    let prevSibling: Maybe<FiberNode> = null;
 
-function performUnitOfWork(fiber: FiberNode | null): Maybe<FiberNode> {
-    if (!fiber)
-        return null;
-    
-    if (!fiber.dom)
-        fiber.dom = createDom(fiber);
-    
-    const elements = fiber.props.children
-    if (!elements)
-        return null;
-    
-    let index = 0
-    let prevSibling : Maybe<FiberNode> = null
-    
     while (index < elements.length) {
-        const element = elements[index]
-        console.log(element.type)
-        
-        const newFiber : FiberNode = {
+        const element = elements[index];
+        console.log(element.type + "<-- child");
+
+        const newFiber: FiberNode = {
             type: element.type,
             props: element.props,
             parent: fiber,
             dom: null,
-        }
-        
+        };
+
         if (index === 0) {
-            fiber.child = newFiber
+            fiber.child = newFiber;
         } else {
-            prevSibling!.sibling = newFiber 
+            prevSibling!.sibling = newFiber;
         }
-        prevSibling = newFiber
-        index++
+        prevSibling = newFiber;
+        index++;
     }
-    
-    if (fiber.child) {
-        return fiber.child
-    }
-    
-    let nextFiber : Maybe<FiberNode> = fiber
-    while (nextFiber) {
-        if (nextFiber.sibling) {
-            return nextFiber.sibling
-        }
-        nextFiber = nextFiber.parent
-    }
-    
-    return null; // Fix: Explicit return null
 }
 
 export function render(elm: VNode | TextVNode, container: Element) {
@@ -96,12 +99,12 @@ function commitWork(fiber : Maybe<FiberNode>) {
         return
     const domParent = fiber.parent?.dom
     console.log("im in")
-    console.log(fiber.type + "<----" + Boolean(fiber.dom))
+    console.log(fiber.type + "<----" + Boolean(fiber.dom) + " " + Boolean(domParent))
     if (domParent && fiber.dom) {
-        if (domParent.nodeType === Node.ELEMENT_NODE) {
-            console.log("pushed");
-            (domParent as Element).appendChild(fiber.dom)
+        if (fiber.dom.nodeType == Node.TEXT_NODE) {
+            console.log(fiber.dom.textContent + "pepe")
         }
+            (domParent as Element).appendChild(fiber.dom)
     }
     
     if (fiber.child)
