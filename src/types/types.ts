@@ -19,11 +19,13 @@ export type TextVNode = {
     }
 }
 export interface FiberNode extends VNode {
-    dom: Element | Text | null;
-    sibling?: FiberNode;
-    child?: FiberNode;
-    parent?: FiberNode;
-    alternate?: FiberNode;
+    dom?: Element | Text | null;
+    sibling?: FiberNode | null;
+    child?: FiberNode | null;
+    parent?: FiberNode | null;
+    alternate?: FiberNode | null;
 }
 
+
+export type Maybe<T>  = T | undefined | null
 export type FunctionComponent = (props: Props) => VNode;

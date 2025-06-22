@@ -6,8 +6,8 @@ import {
     FunctionComponent,
     TextVNode,
 } from "../types/types";
-import { isTextNode, setAttributes } from "../utils/utils";
-
+import { isTextNode, setAttributes } from "../utils/utils.ts";
+import { render } from "../render/render.ts";
 
 
 
@@ -40,4 +40,4 @@ const Fragment: FunctionComponent = (props: Props) => {
     };
 };
 
-export { Fragment, createElement };
+export { Fragment, createElement, render };

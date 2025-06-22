@@ -1,4 +1,5 @@
 import * as Miku from "./src/Factory/Factory.ts";
+import { workLoop } from "./src/render/render.ts";
 const aa = document.body.querySelector("#app");
 
 function List({ username } :{username : string}) {
@@ -78,3 +79,6 @@ function Header() {
 
 <h1></h1>;
 if (aa) Miku.render(Header(), aa);
+
+
+requestIdleCallback(workLoop)
