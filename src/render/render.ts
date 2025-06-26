@@ -3,7 +3,7 @@ import { isTextNode, setAttributes } from "../utils/utils.ts";
 
 let nextUnitOfWork : Maybe<FiberNode> = null
 let wipRoot : Maybe<FiberNode> = null; 
-
+let currentRoot: Maybe<FiberNode> = null;
 export const workLoop: IdleRequestCallback = function (deadline) {
     let shouldYield = false;
     while (!shouldYield && nextUnitOfWork) {
@@ -36,7 +36,6 @@ function findNextSibling(fiber: FiberNode): Maybe<FiberNode> {
         }
         currentFiber = currentFiber.parent;
     }
-    
     return null;
 }
 export function createDom(fiber : FiberNode) {
@@ -46,17 +45,13 @@ export function createDom(fiber : FiberNode) {
     
     if (dom.nodeType == Node.ELEMENT_NODE)
         setAttributes(dom as Element, fiber.props)
-    else
-    {
-      console.log(fiber.props.nodeValue)
-    }
     return dom
 }
     
 function recouncilChildren(elements: VNode[], fiber: FiberNode) {
     let index = 0;
     let prevSibling: Maybe<FiberNode> = null;
-
+    let oldFiber = fiber.alternate?.child
     while (index < elements.length) {
         const element = elements[index];
         console.log(element.type + "<-- child");
@@ -84,13 +79,15 @@ export function render(elm: VNode | TextVNode, container: Element) {
         type: "",
         props: {
             children: [elm]
-        }
+        },
+        alternate : currentRoot
     }
     nextUnitOfWork = wipRoot;
 }
 
 function commitRoot() {
     commitWork(wipRoot?.child)
+    currentRoot = wipRoot;
     wipRoot = null
 }
 
