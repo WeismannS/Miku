@@ -1,15 +1,17 @@
 export type Props = {
     children?:  VNode[];
     nodeValue?: string;
+    [key: string]:  any
 } & MikuAttributes;
 
 export type MikuAttributes = {
-    [k: string]: string | number | boolean | bigint;
+    [k: string]: any
 } | {}; 
 
 export type VNode = {
     type: string;
     props: Props;
+    
 } 
 
 export type TextVNode = {
@@ -24,6 +26,7 @@ export interface FiberNode extends VNode {
     child?: FiberNode | null;
     parent?: FiberNode | null;
     alternate?: FiberNode | null;
+    effectTag?: "UPDATE" | "PLACEMENT" | "DELETION" | null;
 }
 
 

@@ -1,9 +1,10 @@
-import { FiberNode, Maybe, TextVNode, VNode} from "../types/types.ts";
-import { isTextNode, setAttributes } from "../utils/utils.ts";
+import { FiberNode, Maybe, Props, TextVNode, VNode} from "../types/types.ts";
+import { isEventListener, isTextNode, setAttributes } from "../utils/utils.ts";
 
 let nextUnitOfWork : Maybe<FiberNode> = null
 let wipRoot : Maybe<FiberNode> = null; 
 let currentRoot: Maybe<FiberNode> = null;
+let deletions : FiberNode[] = [];
 export const workLoop: IdleRequestCallback = function (deadline) {
     let shouldYield = false;
     while (!shouldYield && nextUnitOfWork) {
@@ -18,12 +19,16 @@ function performUnitOfWork(fiber: FiberNode | null): Maybe<FiberNode> {
     if (!fiber)
         return null;
     if (!fiber.dom)
-        fiber.dom = createDom(fiber);
+        if (fiber.type !== "frag")
+            fiber.dom = createDom(fiber);
+        else 
+            fiber.dom = fiber.parent?.dom || null;
     const elements = fiber.props.children;
     if (elements && elements.length > 0)
         recouncilChildren(elements, fiber);
-    if (fiber.child) 
-        return fiber.child;
+    if (fiber.child) {
+            return fiber.child;
+    }  
     return findNextSibling(fiber);
 }
 
@@ -48,23 +53,45 @@ export function createDom(fiber : FiberNode) {
     return dom
 }
     
-function recouncilChildren(elements: VNode[], fiber: FiberNode) {
+function recouncilChildren(elements: VNode[], wipFiber: FiberNode) {
     let index = 0;
     let prevSibling: Maybe<FiberNode> = null;
-    let oldFiber = fiber.alternate?.child
-    while (index < elements.length) {
+    let oldFiber = wipFiber.alternate?.child
+    while (index < elements.length || oldFiber) {
         const element = elements[index];
-        console.log(element.type + "<-- child");
+        const sameType: boolean = !!(oldFiber && element && oldFiber.type === element.type);
+        let newFiber: FiberNode | null = null; 
+        if (sameType )
+        {
+            newFiber = {
+                type: oldFiber?.type || "",
+                props: element.props,
+                dom: oldFiber?.dom,
+                parent: wipFiber,
+                alternate: oldFiber,
+                effectTag: "UPDATE",
+            }
+        }
+        if (!sameType && element) {
+            newFiber = {
+                type: element.type,
+                props: element.props,
+                dom: null,
+                parent: wipFiber,
+                alternate: null,
+                effectTag: "PLACEMENT",
+            }
+        }
+        if (!sameType && oldFiber) {
+            oldFiber.effectTag = "DELETION";
+            deletions.push(oldFiber);
+        }
 
-        const newFiber: FiberNode = {
-            type: element.type,
-            props: element.props,
-            parent: fiber,
-            dom: null,
-        };
-
+        if (oldFiber) {
+            oldFiber = oldFiber.sibling;
+        }
         if (index === 0) {
-            fiber.child = newFiber;
+            wipFiber.child = newFiber;
         } else {
             prevSibling!.sibling = newFiber;
         }
@@ -86,6 +113,7 @@ export function render(elm: VNode | TextVNode, container: Element) {
 }
 
 function commitRoot() {
+    deletions.forEach(commitWork);
     commitWork(wipRoot?.child)
     currentRoot = wipRoot;
     wipRoot = null
@@ -95,13 +123,17 @@ function commitWork(fiber : Maybe<FiberNode>) {
     if (!fiber)
         return
     const domParent = fiber.parent?.dom
-    console.log("im in")
-    console.log(fiber.type + "<----" + Boolean(fiber.dom) + " " + Boolean(domParent))
-    if (domParent && fiber.dom) {
-        if (fiber.dom.nodeType == Node.TEXT_NODE) {
-            console.log(fiber.dom.textContent + "pepe")
-        }
-            (domParent as Element).appendChild(fiber.dom)
+    if (domParent && fiber.effectTag === "PLACEMENT" && fiber.type !== "frag")
+    {
+        console.log("Placing", fiber.type, fiber.dom);
+        domParent.appendChild(fiber.dom as Element | Text);
+    }
+    else if (fiber.effectTag === "UPDATE" && fiber.dom) {
+        console.log("Updating", fiber.type, fiber.dom);
+        updateDom(fiber.dom as Element | Text, fiber.alternate?.props || {}, fiber.props);
+    } else if (fiber.effectTag === "DELETION" && fiber.dom) {
+        const dom = fiber.dom as Element | Text;
+        dom.remove();
     }
     
     if (fiber.child)
@@ -110,5 +142,25 @@ function commitWork(fiber : Maybe<FiberNode>) {
     if (fiber.sibling) {
         console.log("sibling here")
         commitWork(fiber.sibling)
+    }
+}
+
+function updateDom(dom: Element | Text, oldProps: Props, newProps: Props) {
+    for (const key in oldProps) {
+        if (!(key in newProps)) {
+            if (key == "children") continue;
+            if (isEventListener(key)) {
+                const eventName = key.slice(2).toLowerCase();
+                dom.removeEventListener(eventName, oldProps[key] as EventListener);
+            } 
+            else 
+                (dom as Element).removeAttribute(key);
+        }
+    }
+    for (const key in newProps) {
+        if (key == "children") continue;
+        if (newProps[key] !== oldProps[key]) {
+            setAttributes(dom as Element, { [key]: newProps[key] });
+        }
     }
 }

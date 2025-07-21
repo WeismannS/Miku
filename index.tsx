@@ -1,4 +1,5 @@
-import * as Miku from "./src/Factory/Factory.ts";
+import { FormEvent } from "react";
+import * as Miku from "./src/index.ts";
 import { workLoop } from "./src/render/render.ts";
 const aa = document.body.querySelector("#app");
 
@@ -14,9 +15,19 @@ function List({ username } :{username : string}) {
         </>
     );
 }
-function Header() {
+const updateValue = (e: FormEvent) => {
+    const input = e.target as HTMLInputElement;
+    let value = input.value;
+    console.log("Input value changed to:", value);
+    const aa = document.body.querySelector("#app");
+    if (!aa) return;
+    Miku.render(<Header value={value} />, aa);
+}
+
+function Header({ value }: { value: string }) {
+    console.log("Rendering Header with value:", value);
     return (
-        <div  className="hello">
+        <div  className="hello" onClick={() => console.log("clicked")}>
             <h1>First Section of the Imperial Family</h1>
             <p>
                 Lorem Ipsum is simply dummy text of the printing and typesetting
@@ -67,18 +78,21 @@ function Header() {
                 traditions. They participate in seasonal festivals, maintain
                 ancient rituals, and serve as patrons of arts and sciences.
                 Their influence extends to international diplomacy, where they
-                represent Japan's cultural heritage on the global stage.
+                represent Japan's cultural heritage on the global stage. {value}
             </p>
 
             <ul>
                 <List username="hello" />{" "}
             </ul>
+            <input onInput={updateValue} value={value} />
+            {value}
+
         </div>
     );
 }
 
 <h1></h1>;
-if (aa) Miku.render(Header(), aa);
+if (aa) Miku.render(<Header value=""/>, aa);
 
 
 requestIdleCallback(workLoop)
