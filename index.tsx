@@ -23,7 +23,7 @@ const updateValue = (e: FormEvent) => {
     if (!aa) return;
     Miku.render(<Header value={value} />, aa);
 }
-
+const stuff = ["Annual New Year Poetry Reading", "Spring and Autumn Garden Parties LOL WORKED", "State visits and diplomatic functions", "Cultural preservation initiatives", "Disaster relief and humanitarian activities"];
 function Header({ value }: { value: string }) {
     console.log("Rendering Header with value:", value);
     return (
@@ -85,7 +85,7 @@ function Header({ value }: { value: string }) {
                 <List username="hello" />{" "}
             </ul>
             <input onInput={updateValue} value={value} />
-            {value}
+            {stuff.map(e=> <li key={e}>{e}</li>)}
 
         </div>
     );

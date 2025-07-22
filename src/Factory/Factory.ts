@@ -17,7 +17,7 @@ function createElement(
     ...children: (VNode | string)[]
 ): VNode | TextVNode {
     const properties = {
-        children: children.length > 0 ? children.map(e=> {
+        children: children.length > 0 ? children.flat(Infinity).map(e=> {
           if (typeof e == "string")
               return { type: "TEXT_NODE", props: {nodeValue : e} }
           return e;
