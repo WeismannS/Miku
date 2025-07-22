@@ -6,28 +6,10 @@ import {
     FunctionComponent,
     TextVNode,
 } from "../types/types";
-import { isTextNode, setAttributes } from "../utils/utils";
+import { isTextNode, setAttributes } from "../utils/utils.ts";
+import { render } from "../render/render.ts";
 
 
-
-function render(elm: VNode | TextVNode, container: HTMLElement | Text | Element) {
-    if (isTextNode(elm)) {
-        container.appendChild(document.createTextNode(elm.props.nodeValue));
-        return;
-    }
-    if (elm.type == "frag") {
-        if (elm.props.children) {
-            for (let child of elm.props.children) render(child, container);
-        }
-        return;
-    }
-    const element = document.createElement(elm.type);
-    setAttributes(element, elm.props)
-    if (elm.props.children) {
-        for (let child of elm.props.children) render(child, element);
-    }
-    container.appendChild(element);
-}
 
 function createElement(
     elm: FunctionComponent | string,
@@ -35,7 +17,7 @@ function createElement(
     ...children: (VNode | string)[]
 ): VNode | TextVNode {
     const properties = {
-        children: children.length > 0 ? children.map(e=> {
+        children: children.length > 0 ? children.flat(Infinity).map(e=> {
           if (typeof e == "string")
               return { type: "TEXT_NODE", props: {nodeValue : e} }
           return e;
