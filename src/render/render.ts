@@ -1,22 +1,19 @@
+import { globalState } from "../globals/globals.ts";
 import { FiberNode, Maybe, Props, TextVNode, VNode} from "../types/types.ts";
 import { isEventListener, isTextNode, setAttributes } from "../utils/utils.ts";
 
-let nextUnitOfWork : Maybe<FiberNode> = null
-let wipRoot : Maybe<FiberNode> = null; 
-let currentRoot: Maybe<FiberNode> = null;
-let deletions : FiberNode[] = [];
-let currentFiber : Maybe<FiberNode> = null;
 
 export const workLoop: IdleRequestCallback = function (deadline) {
     let shouldYield = false;
-    while (!shouldYield && nextUnitOfWork) {
-        nextUnitOfWork = performUnitOfWork(nextUnitOfWork);
+    while (!shouldYield && globalState.nextUnitOfWork) {
+        globalState.nextUnitOfWork = performUnitOfWork(globalState.nextUnitOfWork);
         shouldYield = deadline.timeRemaining() < 1;
     }
-    if (!nextUnitOfWork && wipRoot)
+    if (!globalState.nextUnitOfWork && globalState.wipRoot)
         commitRoot();
     requestIdleCallback(workLoop);
 }
+
 function performUnitOfWork(fiber: FiberNode | null): Maybe<FiberNode> {
     if (!fiber)
         return null;
@@ -71,6 +68,7 @@ function recouncilChildren(elements: VNode[], wipFiber: FiberNode) {
                 parent: wipFiber,
                 alternate: oldFiber,
                 effectTag: "UPDATE",
+                hookIndex : 0
             }
         }
         if (!sameType && element) {
@@ -81,13 +79,13 @@ function recouncilChildren(elements: VNode[], wipFiber: FiberNode) {
                 parent: wipFiber,
                 alternate: null,
                 effectTag: "PLACEMENT",
+                hookIndex : 0
             }
         }
         if (!sameType && oldFiber) {
             oldFiber.effectTag = "DELETION";
-            deletions.push(oldFiber);
+            globalState.deletions.push(oldFiber);
         }
-
         if (oldFiber) {
             oldFiber = oldFiber.sibling;
         }
@@ -102,27 +100,29 @@ function recouncilChildren(elements: VNode[], wipFiber: FiberNode) {
 }
 
 export function render(elm: VNode | TextVNode, container: Element) {
-    wipRoot = {
+    globalState.wipRoot = {
         dom: container,
         type: "",
         props: {
             children: [elm]
         },
-        alternate : currentRoot
+        alternate : globalState.currentRoot,
+        hookIndex : 0
     }
-    nextUnitOfWork = wipRoot;
+    globalState.nextUnitOfWork = globalState.wipRoot;
 }
 
 function commitRoot() {
-    deletions.forEach(commitWork);
-    commitWork(wipRoot?.child)
-    currentRoot = wipRoot;
-    wipRoot = null
+    globalState.deletions.forEach(commitWork);
+    commitWork(globalState.wipRoot?.child)
+    globalState.currentRoot = globalState.wipRoot;
+    globalState.wipRoot = null
 }
 
 function commitWork(fiber : Maybe<FiberNode>) {
     if (!fiber)
         return
+    fiber.hookIndex = 0;
       let domParentFiber = fiber.parent
   while ( domParentFiber && !domParentFiber.dom) {
     domParentFiber = domParentFiber.parent
@@ -185,6 +185,9 @@ function updateFunctionComponent(fiber : FiberNode) {
     if (!fiber.type || typeof fiber.type !== "function") {
         throw new Error("Fiber type is not a function component");
     }
+  fiber.hooks = [];
+  globalState.currentFiber = fiber;
+  
   const children = [fiber.type(fiber.props)]
   console.log("Function component", fiber.type, children)
   recouncilChildren(children, fiber)
@@ -192,7 +195,7 @@ function updateFunctionComponent(fiber : FiberNode) {
 
 function updateHostComponent(fiber : FiberNode) {
   if (!fiber.dom) {
-    fiber.dom = createDom(fiber)
+    fiber.dom = fiber.type !== "frag" ? createDom(fiber) : fiber.parent?.dom
   }
   recouncilChildren(fiber.props.children || [], fiber);
 }

@@ -28,6 +28,7 @@ export interface FiberNode extends VNode {
     alternate?: FiberNode | null;
     effectTag?: "UPDATE" | "PLACEMENT" | "DELETION" | null;
     hooks? : any[];
+    hookIndex : number;
 }
 
 

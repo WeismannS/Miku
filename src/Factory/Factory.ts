@@ -26,7 +26,7 @@ function createElement(
     } as Props;
         return {
             type: elm,
-            props: properties,
+            props: properties
         };
     }
 

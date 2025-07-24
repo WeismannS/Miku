@@ -1,4 +1,5 @@
 import { FormEvent } from "react";
+import { useState } from "./src/hooks/useState.ts";
 import * as Miku from "./src/index.ts";
 import { workLoop } from "./src/render/render.ts";
 const aa = document.body.querySelector("#app");
@@ -15,17 +16,11 @@ function List({ username } :{username : string}) {
         </>
     );
 }
-const updateValue = (e: FormEvent) => {
-    const input = e.target as HTMLInputElement;
-    let value = input.value;
-    console.log("Input value changed to:", value);
-    const aa = document.body.querySelector("#app");
-    if (!aa) return;
-    Miku.render(<Header value={value} />, aa);
-}
-const stuff = ["Annual New Year Poetry Reading", "Spring and Autumn Garden Parties LOL WORKED", "State visits and diplomatic functions", "Cultural preservation initiatives", "Disaster relief and humanitarian activities"];
+
+
+const stuff = ["Nigga", "slave","cock"]
 function Header({ value }: { value: string }) {
-    console.log("Rendering Header with value:", value);
+    const [name, setName] = useState("");
     return (
         <div  className="hello" onClick={() => console.log("clicked")}>
             <h1>First Section of the Imperial Family</h1>
@@ -78,13 +73,14 @@ function Header({ value }: { value: string }) {
                 traditions. They participate in seasonal festivals, maintain
                 ancient rituals, and serve as patrons of arts and sciences.
                 Their influence extends to international diplomacy, where they
-                represent Japan's cultural heritage on the global stage. {value}
+                represent Japan's cultural heritage on the global stage. {name}
             </p>
 
             <ul>
                 <List username="hello" />{" "}
             </ul>
-            <input onInput={updateValue} value={value} />
+            
+            <input onInput={(e)=>setName(e.currentTarget.value)} />
             {stuff.map(e=> <li key={e}>{e}</li>)}
 
         </div>
