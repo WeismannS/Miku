@@ -9,7 +9,7 @@ export type MikuAttributes = {
 } | {}; 
 
 export type VNode = {
-    type: string;
+    type: string | FunctionComponent;
     props: Props;
     
 } 
@@ -27,6 +27,7 @@ export interface FiberNode extends VNode {
     parent?: FiberNode | null;
     alternate?: FiberNode | null;
     effectTag?: "UPDATE" | "PLACEMENT" | "DELETION" | null;
+    hooks? : any[];
 }
 
 

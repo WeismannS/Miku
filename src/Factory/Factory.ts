@@ -24,14 +24,12 @@ function createElement(
         }) : undefined,
         ...(props || {}),
     } as Props;
-    if (typeof elm == "function") return elm(properties);
-    else {
         return {
             type: elm,
             props: properties,
         };
     }
-}
+
 
 const Fragment: FunctionComponent = (props: Props) => {
     return {
