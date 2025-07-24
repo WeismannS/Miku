@@ -9,8 +9,6 @@ import {
 import { isTextNode, setAttributes } from "../utils/utils.ts";
 import { render } from "../render/render.ts";
 
-
-
 function createElement(
     elm: FunctionComponent | string,
     props: MikuAttributes | null,

@@ -1,5 +1,6 @@
 import { FormEvent } from "react";
 import { useState } from "./src/hooks/useState.ts";
+import { useEffect } from "./src/hooks/useEffect.ts";
 import * as Miku from "./src/index.ts";
 import { workLoop } from "./src/render/render.ts";
 const aa = document.body.querySelector("#app");
@@ -21,6 +22,14 @@ function List({ username } :{username : string}) {
 const stuff = ["Nigga", "slave","cock"]
 function Header({ value }: { value: string }) {
     const [name, setName] = useState("");
+    useEffect(() => {
+        const interval = setInterval(() => {
+            console.log(name);
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [name]);
+
     return (
         <div  className="hello" onClick={() => console.log("clicked")}>
             <h1>First Section of the Imperial Family</h1>
@@ -79,10 +88,9 @@ function Header({ value }: { value: string }) {
             <ul>
                 <List username="hello" />{" "}
             </ul>
-            
             <input onInput={(e)=>setName(e.currentTarget.value)} />
             {stuff.map(e=> <li key={e}>{e}</li>)}
-
+            
         </div>
     );
 }

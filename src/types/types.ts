@@ -29,6 +29,7 @@ export interface FiberNode extends VNode {
     effectTag?: "UPDATE" | "PLACEMENT" | "DELETION" | null;
     hooks? : any[];
     hookIndex : number;
+    pendingEffects : ((()=>void) | (()=> (()=> void)))[]
 }
 
 

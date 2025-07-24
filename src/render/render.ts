@@ -68,7 +68,8 @@ function recouncilChildren(elements: VNode[], wipFiber: FiberNode) {
                 parent: wipFiber,
                 alternate: oldFiber,
                 effectTag: "UPDATE",
-                hookIndex : 0
+                hookIndex : 0,
+                pendingEffects : oldFiber?.pendingEffects || []
             }
         }
         if (!sameType && element) {
@@ -79,7 +80,8 @@ function recouncilChildren(elements: VNode[], wipFiber: FiberNode) {
                 parent: wipFiber,
                 alternate: null,
                 effectTag: "PLACEMENT",
-                hookIndex : 0
+                hookIndex : 0,
+                pendingEffects : []
             }
         }
         if (!sameType && oldFiber) {
@@ -107,7 +109,8 @@ export function render(elm: VNode | TextVNode, container: Element) {
             children: [elm]
         },
         alternate : globalState.currentRoot,
-        hookIndex : 0
+        hookIndex : 0,
+        pendingEffects : []
     }
     globalState.nextUnitOfWork = globalState.wipRoot;
 }
@@ -140,10 +143,9 @@ function commitWork(fiber : Maybe<FiberNode>) {
         console.log("Deleting", fiber.type, fiber.dom)
         commitDeletion(fiber, domParent as Element | Text);
     }
-    
+    fiber.pendingEffects = fiber.pendingEffects.map(e=> e()).filter( e=> e!=undefined)
     if (fiber.child)
         commitWork(fiber.child)
-    
     if (fiber.sibling) {
         console.log("sibling here")
         commitWork(fiber.sibling)
@@ -185,7 +187,8 @@ function updateFunctionComponent(fiber : FiberNode) {
     if (!fiber.type || typeof fiber.type !== "function") {
         throw new Error("Fiber type is not a function component");
     }
-  fiber.hooks = [];
+  fiber.hooks ??= [];
+  fiber.pendingEffects ??= [];
   globalState.currentFiber = fiber;
   
   const children = [fiber.type(fiber.props)]

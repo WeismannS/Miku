@@ -1,5 +1,5 @@
 import { globalState } from "../globals/globals.ts";
-import { Props } from "../types/types";
+import { Props } from "../types/types.ts";
 
 
 
@@ -33,6 +33,7 @@ export function useState<T>(
       props: globalState?.currentRoot?.props as Props,
       alternate: globalState.currentRoot,
       hookIndex : 0,
+      pendingEffects : []
     };
     globalState.nextUnitOfWork = globalState.wipRoot;
     globalState.deletions = [];
