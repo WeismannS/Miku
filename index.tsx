@@ -6,7 +6,13 @@ import { workLoop } from "./src/render/render.ts";
 const aa = document.body.querySelector("#app");
 
 function List({ username } :{username : string}) {
-    console.log(username);
+    useEffect(() => {
+        const interval = setInterval(() => {
+            console.log(username);
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [username]);
     return (
         <>
             <li>Annual New Year Poetry Reading</li>
@@ -22,13 +28,6 @@ function List({ username } :{username : string}) {
 const stuff = ["Nigga", "slave","cock"]
 function Header({ value }: { value: string }) {
     const [name, setName] = useState("");
-    useEffect(() => {
-        const interval = setInterval(() => {
-            console.log(name);
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, [name]);
 
     return (
         <div  className="hello" onClick={() => console.log("clicked")}>
@@ -86,11 +85,11 @@ function Header({ value }: { value: string }) {
             </p>
 
             <ul>
-                <List username="hello" />{" "}
+                { name == "" && <List username={name} />}
             </ul>
             <input onInput={(e)=>setName(e.currentTarget.value)} />
-            {stuff.map(e=> <li key={e}>{e}</li>)}
-            
+            {/* {stuff.map(e=> <li key={e}>{e}</li>)} */}
+            <button onClick={()=> setName("lol")}></button>
         </div>
     );
 }
