@@ -23,7 +23,7 @@ function createElement(
         ...(props || {}),
     } as Props;
         return {
-            type: elm,
+            type: elm ,
             props: properties
         };
     }

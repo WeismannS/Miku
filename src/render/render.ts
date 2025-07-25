@@ -1,3 +1,4 @@
+import { Fragment } from "../Factory/Factory.ts";
 import { globalState } from "../globals/globals.ts";
 import { FiberNode, Maybe, Props, TextVNode, VNode} from "../types/types.ts";
 import { isEventListener, isTextNode, setAttributes } from "../utils/utils.ts";
@@ -59,8 +60,7 @@ function recouncilChildren(elements: VNode[], wipFiber: FiberNode) {
         const element = elements[index];
         const sameType: boolean = !!(oldFiber && element && oldFiber.type === element.type);
         let newFiber: FiberNode | null = null; 
-        if (oldFiber?.type == "frag")
-            console.error("lmao this is it?");
+        
         if (sameType )
         {
             newFiber = {
@@ -90,6 +90,8 @@ function recouncilChildren(elements: VNode[], wipFiber: FiberNode) {
         if (!sameType && oldFiber) {
             console.error("DELETION HERE ", oldFiber)
             oldFiber.effectTag = "DELETION";
+            if (oldFiber.child?.type == Fragment)
+                oldFiber.child.effectTag = "DELETION";
             globalState.deletions.push(oldFiber);
         }
         if (oldFiber) {
@@ -120,7 +122,9 @@ export function render(elm: VNode | TextVNode, container: Element) {
 }
 
 function commitRoot() {
+    console.log(globalState.deletions.length, "deletions");
     globalState.deletions.forEach(commitWork);
+    console.log("Committing root", globalState.wipRoot);
     commitWork(globalState.wipRoot?.child)
     globalState.currentRoot = globalState.wipRoot;
     globalState.wipRoot = null
@@ -129,6 +133,7 @@ function commitRoot() {
 function commitWork(fiber : Maybe<FiberNode>) {
     if (!fiber)
         return
+    console.log("Committing work for fiber", fiber.type, fiber.dom);
     fiber.hookIndex = 0;
       let domParentFiber = fiber.parent
   while ( domParentFiber && !domParentFiber.dom) {
@@ -137,7 +142,6 @@ function commitWork(fiber : Maybe<FiberNode>) {
     const domParent = domParentFiber?.dom
     if (domParent && fiber.parent?.effectTag != 'DELETION'  && fiber.effectTag === "PLACEMENT" &&  fiber.dom != null && fiber.type !== "frag")
     {
-        console.warn(fiber.parent);
         console.log("Placing", fiber.type, fiber.dom);
         domParent.appendChild(fiber.dom as Element | Text);
     }
@@ -145,15 +149,19 @@ function commitWork(fiber : Maybe<FiberNode>) {
         console.log("Updating", fiber.type, fiber.dom);
         updateDom(fiber.dom as Element | Text, fiber.alternate?.props || {}, fiber.props);
    } else if (fiber.effectTag === "DELETION") {
-    console.error("Deleting", fiber.type, fiber.dom)
+    console.error("Deleting", fiber)
     fiber.pendingEffects.forEach(e=> e());
     commitDeletion(fiber, domParent as Element | Text);
 }
     fiber.pendingEffects = fiber.pendingEffects.map(e=> e()).filter( e=> e!=undefined)
-    if (fiber.child)
+    if (fiber.child && fiber.effectTag !== "DELETION") 
+    {
+        console.log("Child here", fiber.child)
+
         commitWork(fiber.child)
+    }
     if (fiber.sibling) {
-        console.log("sibling here")
+        console.log("sibling here", fiber.sibling)
         commitWork(fiber.sibling)
     }
 }
@@ -161,12 +169,16 @@ function commitWork(fiber : Maybe<FiberNode>) {
 
 function commitDeletion(fiber: Maybe<FiberNode>, domParent: Element | Text) {
     if (!fiber) return;
-    
+    console.log("Called !");
     if (fiber.dom) {
-        console.warn("deleted!", fiber.dom);
-        domParent.removeChild(fiber.dom);
+        console.warn("deleted!", fiber, domParent);
+            domParent.removeChild(fiber.dom);
     } else {
+
         commitDeletion(fiber.child, domParent);
+    }
+    if (fiber.parent?.type === "frag" && fiber.sibling) {
+        commitDeletion(fiber.sibling, domParent);
     }
 }
 
