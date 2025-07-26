@@ -94,22 +94,22 @@ function recouncilChildren(elements: VNode[], wipFiber: FiberNode) {
         let newFiber: FiberNode | null = null;
         
         if (sameType && matchingOldFiber) {
-            usedOldFibers.add(matchingOldFiber);
-            const newProps = matchingOldFiber.type === "TEXT_NODE"
-                ? { nodeValue: element.props?.nodeValue }
-                : element.props;
-                
-            newFiber = {
-                type: matchingOldFiber.type,
-                props: newProps,
-                dom: matchingOldFiber.dom,
-                parent: wipFiber,
-                alternate: matchingOldFiber,
-                effectTag: "UPDATE",
-                hookIndex: 0,
-                hooks: matchingOldFiber.hooks || [],
-            };
-        } else if (element) {
+    usedOldFibers.add(matchingOldFiber);
+    const newProps = matchingOldFiber.type === "TEXT_NODE"
+        ? { nodeValue: element.props?.nodeValue }
+        : element.props;
+        
+    newFiber = {
+        type: matchingOldFiber.type,
+        props: newProps,
+        dom: matchingOldFiber.dom,
+        parent: wipFiber,
+        alternate: matchingOldFiber,
+        effectTag: "UPDATE",
+        hookIndex: matchingOldFiber.hookIndex, // ✅ Preserve hookIndex
+        hooks: [...(matchingOldFiber.hooks || [])], // ✅ Deep copy hooks
+    };
+} else if (element) {
             newFiber = {
                 type: element.type || "TEXT_NODE",
                 props: element.props || { nodeValue: element },
@@ -174,12 +174,7 @@ function commitRoot() {
             }
         }
     }
-    for (const [key, queue] of  globalState.hookQueues.entries()) {
-        if (queue.length === 0) {
-            globalState.hookQueues.delete(key);
-        }
-    }
-    
+  
     globalState.currentRoot = globalState.wipRoot;
     globalState.wipRoot = null;
 }
