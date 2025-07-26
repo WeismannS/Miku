@@ -3,99 +3,240 @@ import { useState } from "./src/hooks/useState.ts";
 import { useEffect } from "./src/hooks/useEffect.ts";
 import * as Miku from "./src/index.ts";
 import { workLoop } from "./src/render/render.ts";
+import { globalState } from "./src/globals/globals";
 const aa = document.body.querySelector("#app");
 
-function List({ username } :{username : string}) {
-    useEffect(() => {
-        const interval = setInterval(() => {
-            console.log(username);
-        }, 1000);
+// Type definitions
+type Todo = {
+  id: number;
+  text: string;
+  completed: boolean;
+  createdAt: string;
+};
 
-        return () => clearInterval(interval);
-    }, [username]);
-    return (
-        <>
-            <li>Annual New Year Poetry Reading</li>
-            <li>Spring and Autumn Garden Parties LOL WORKED</li>
-            <li>State visits and diplomatic functions</li>
-            <li>Cultural preservation initiatives</li>
-            <li>Disaster relief and humanitarian activities</li>
-        </>
-    );
-}
+type FilterType = 'all' | 'active' | 'completed';
 
+type NotificationType = {
+  type: 'add' | 'delete' | 'clear';
+  text: string;
+};
 
-const stuff = ["Nigga", "slave","cock"]
-function Header({ value }: { value: string }) {
-    const [name, setName] = useState("");
+// Custom hook for localStorage persistence
+const useLocalStorage = <T,>(key: string, initialValue: T): [T, (value: T) => void] => {
+  const [storedValue, setStoredValue] = useState<T>(() => {
+    try {
+      const item = window.localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      console.error(error);
+      return initialValue;
+    }
+  });
 
-    return (
-        <div  className="hello" onClick={() => console.log("clicked")}>
-            <h1>First Section of the Imperial Family</h1>
-            <p>
-                Lorem Ipsum is simply dummy text of the printing and typesetting
-                industry. Lorem Ipsum has been the industry's standard dummy
-                text ever since the 1500s, when an unknown printer took a galley
-                of type and scrambled it to make a type specimen book. It has
-                survived not only five centuries, but also the leap into
-                electronic typesetting, remaining essentially unchanged. It was
-                popularised in the 1960s with the release of Letraset sheets
-                containing Lorem Ipsum passages, and more recently with desktop
-                publishing software like Aldus PageMaker including versions of
-                Lorem Ipsum.
-            </p>
-            <ul>
-                <li>
-                    Emperor Akihito - Reigned from 1989 to 2019, known for his
-                    dedication to peace and humanitarian causes
-                </li>
-                <li>
-                    Emperor Naruhito - Current emperor since 2019, focused on
-                    environmental conservation and water management
-                </li>
-                <li>
-                    Crown Prince Fumihito - Heir apparent, known for his
-                    ornithological research and conservation work
-                </li>
-                <li>
-                    Princess Aiko - Daughter of Emperor Naruhito, currently
-                    studying at Gakushuin University
-                </li>
-            </ul>
+  const setValue = (value: T) => {
+    try {
+      setStoredValue(value);
+      window.localStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
-            <h2>Second Section: Historical Context</h2>
-            <p>
-                The Japanese Imperial Family is the oldest continuing
-                monarchical family in the world. With a lineage that traces back
-                over 2,000 years, the imperial institution has survived through
-                numerous political changes, wars, and social transformations.
-                The modern constitutional monarchy system established after
-                World War II has redefined the role of the emperor as a symbol
-                of the state and unity of the people.
-            </p>
+  return [storedValue, setValue];
+};
 
-            <h2>Third Section: Cultural Significance</h2>
-            <p>
-                Beyond their ceremonial duties, members of the imperial family
-                play crucial roles in preserving Japanese culture and
-                traditions. They participate in seasonal festivals, maintain
-                ancient rituals, and serve as patrons of arts and sciences.
-                Their influence extends to international diplomacy, where they
-                represent Japan's cultural heritage on the global stage. {name}
-            </p>
+// Custom hook for notifications
+const useNotification = () => {
+  const [notification, setNotification] = useState<NotificationType | null>(null);
 
-            <ul>
-                { name == "" && <List username={name} />}
-            </ul>
-            <input onInput={(e)=>setName(e.currentTarget.value)} />
-            {/* {stuff.map(e=> <li key={e}>{e}</li>)} */}
-            <button onClick={()=> setName("lol")}></button>
-        </div>
-    );
-}
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
 
-<h1></h1>;
-if (aa) Miku.render(<Header value=""/>, aa);
+  return [notification, setNotification] as const;
+};
+
+const TodoApp: React.FC = () => {
+  const [todos, setTodos] = useLocalStorage<Todo[]>('todos', []);
+  const [inputValue, setInputValue] = useState<string>('');
+  const [filter, setFilter] = useState<FilterType>('all');
+  const [notification, setNotification] = useNotification();
+
+  // Keyboard shortcut effect
+  useEffect(() => {
+    console.log("done")
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && e.ctrlKey) {
+        document.getElementById('add-button')?.click();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () =>{
+      console.log("cleared this")
+       window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, []);
+
+  const addTodo = (): void => {
+    if (inputValue.trim() === '') return;
+    
+    const newTodo: Todo = {
+      id: Date.now(),
+      text: inputValue,
+      completed: false,
+      createdAt: new Date().toISOString()
+    };
+    
+    setTodos([...todos, newTodo]);
+    setInputValue('');
+    setNotification({ type: 'add', text: 'Todo added!' });
+  };
+
+  const toggleTodo = (id: number): void => {
+    setTodos(todos.map(todo => 
+      todo.id === id ? { ...todo, completed: !todo.completed } : todo
+    ));
+  };
+
+  const deleteTodo = (id: number): void => {
+    setTodos(todos.filter(todo => todo.id !== id));
+    setNotification({ type: 'delete', text: 'Todo deleted!' });
+  };
+
+  const clearCompleted = (): void => {
+    setTodos(todos.filter(todo => !todo.completed));
+    setNotification({ type: 'clear', text: 'Completed todos cleared!' });
+  };
+
+  const filteredTodos = todos.filter(todo => {
+    if (filter === 'active') return !todo.completed;
+    if (filter === 'completed') return todo.completed;
+    return true;
+  });
+
+  const completedCount = todos.filter(t => t.completed).length;
+  const activeCount = todos.length - completedCount;
+
+  return (
+    <div className="bg-white rounded-2xl shadow-xl p-6 mt-10 transition-all duration-300 hover:shadow-2xl">
+      <h1 className="text-3xl font-bold text-center text-indigo-700 mb-2">Fancy Todo List</h1>
+      <p className="text-gray-500 text-center mb-6">Ctrl+Enter to add todos</p>
+      
+   
+      
+      {/* Input Section */}
+      <div className="flex gap-2 mb-6">
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && addTodo()}
+          placeholder="What needs to be done?"
+          className="flex-grow px-4 py-3 rounded-lg border-2 border-indigo-200 focus:border-indigo-500 focus:outline-none transition-colors"
+        />
+        <button
+          id="add-button"
+          onClick={addTodo}
+          className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 rounded-lg font-medium transition-colors shadow-md hover:shadow-lg"
+        >
+          Add
+        </button>
+      </div>
+      
+      {/* Stats */}
+      <div className="flex justify-between text-sm text-gray-500 mb-4">
+        <span>{activeCount} active</span>
+        <span>{completedCount} completed</span>
+      </div>
+      
+      {/* Filter Buttons */}
+      <div className="flex justify-center gap-4 mb-6">
+        {(['all', 'active', 'completed'] as const).map(f => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`px-4 py-2 rounded-full capitalize transition-colors ${
+              filter === f 
+                ? 'bg-indigo-500 text-white' 
+                : 'bg-gray-200 hover:bg-gray-300'
+            }`}
+          >
+            {f}
+          </button>
+        ))}
+      </div>
+      
+      {/* Todo List */}
+      <ul className="space-y-3 mb-6 max-h-96 overflow-y-auto pr-2">
+        {filteredTodos.length === 0 ? (
+          <li className="text-center py-8 text-gray-500">
+            No todos found. Add a new todo to get started!
+          </li>
+        ) : (
+          filteredTodos.map(todo => (
+            <li 
+              key={todo.id}
+              className={`flex items-center justify-between p-4 rounded-xl transition-all duration-300 ${
+                todo.completed 
+                  ? 'bg-green-50 border border-green-200' 
+                  : 'bg-indigo-50 border border-indigo-200'
+              }`}
+            >
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={todo.completed}
+                  onChange={() => toggleTodo(todo.id)}
+                  className="h-5 w-5 text-indigo-600 rounded focus:ring-indigo-500"
+                />
+                <span 
+                  className={`ml-3 text-lg ${
+                    todo.completed 
+                      ? 'line-through text-gray-500' 
+                      : 'text-gray-800'
+                  }`}
+                >
+                  {todo.text}
+                </span>
+              </div>
+              <button
+                onClick={() => deleteTodo(todo.id)}
+                className="text-red-500 hover:text-red-700 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </li>
+          ))
+        )}
+      </ul>
+      
+      {/* Clear Button */}
+      <div className="flex justify-center">
+        <button
+          onClick={clearCompleted}
+          disabled={completedCount === 0}
+          className={`px-5 py-2 rounded-lg font-medium transition-all ${
+            completedCount === 0
+              ? 'bg-gray-300 cursor-not-allowed'
+              : 'bg-red-500 hover:bg-red-600 text-white shadow-md hover:shadow-lg'
+          }`}
+        >
+          Clear Completed
+        </button>
+      </div>
+    </div>
+  );
+};
+
+if (aa) Miku.render(<TodoApp />, aa);
 
 
 requestIdleCallback(workLoop)

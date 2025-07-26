@@ -6,5 +6,9 @@ import { FiberNode, Maybe } from "../types/types.ts"
     currentRoot: null as Maybe<FiberNode>,
     deletions: [] as FiberNode[],
     currentFiber: null as Maybe<FiberNode>,
+    hookQueues: new Map<string, Array<(state: any) => any>>(),
+    pendingEffects : [] as ((() => void) | (() => () => void))[]
 };
+// @ts-ignore
+globalThis.globalState = globalState;
 export {globalState}
