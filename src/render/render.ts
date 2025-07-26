@@ -14,7 +14,6 @@ export const workLoop: IdleRequestCallback = function (deadline) {
     {
         commitRoot();
         globalState.pendingEffects = globalState.pendingEffects.map(e=> e()).filter( e=> e!=undefined)
-
     }
     requestIdleCallback(workLoop);
 }
@@ -63,62 +62,80 @@ export function createDom(fiber : FiberNode) {
 function recouncilChildren(elements: VNode[], wipFiber: FiberNode) {
     let index = 0;
     let prevSibling: Maybe<FiberNode> = null;
-    let oldFiber = wipFiber.alternate?.child
-    while (index < elements.length || oldFiber) {
-        const element = elements[index];
-        const sameType: boolean = !!(oldFiber && element && oldFiber.type === element.type);
-        let newFiber: FiberNode | null = null; 
-        
-        if (sameType) {
-            // For text nodes, always update props.nodeValue to the latest value
-            console.log("sameType", oldFiber?.type, element.props)
-            const newProps = oldFiber?.type === "TEXT_NODE"
-                ? { nodeValue: element.props.nodeValue }
-                : element.props;
-            console.log("newProps", newProps)
-            newFiber = {
-                type: oldFiber?.type || "",
-                props: newProps,
-                dom: oldFiber?.dom,
-                parent: wipFiber,
-                alternate: oldFiber,
-                effectTag: "UPDATE",
-                hookIndex: 0, 
-                hooks: [], 
+    
+    const oldFiberMap = new Map<string | number, FiberNode>();
+    const oldFibersByIndex: FiberNode[] = [];
+    
+    let oldFiber = wipFiber.alternate?.child;
+    let oldIndex = 0;
+    while (oldFiber) {
+        const key = oldFiber.props?.key ?? `__index_${oldIndex}`;
+        oldFiberMap.set(key, oldFiber);
+        oldFibersByIndex.push(oldFiber);
+        oldFiber = oldFiber.sibling;
+        oldIndex++;
+    }
+    
+    const usedOldFibers = new Set<FiberNode>();
+    for (let i = 0; i < elements.length; i++) {
+        const element = elements[i];
+        const elementKey = element?.props?.key ?? `__index_${i}`; 
+        let matchingOldFiber = oldFiberMap.get(elementKey); 
+        if (!matchingOldFiber && oldFibersByIndex[i] && !usedOldFibers.has(oldFibersByIndex[i])) {
+            const oldFiberAtPosition = oldFibersByIndex[i];
+            if (oldFiberAtPosition.type === element?.type) {
+                matchingOldFiber = oldFiberAtPosition;
             }
         }
-        if (!sameType && element) {
-            // console.warn("Old fiber not found", oldFiber)
-            // console.log(element)
+        
+        const sameType = !!(matchingOldFiber && element && 
+            matchingOldFiber.type === element.type);
+        
+        let newFiber: FiberNode | null = null;
+        
+        if (sameType && matchingOldFiber) {
+            usedOldFibers.add(matchingOldFiber);
+            const newProps = matchingOldFiber.type === "TEXT_NODE"
+                ? { nodeValue: element.props?.nodeValue }
+                : element.props;
+                
+            newFiber = {
+                type: matchingOldFiber.type,
+                props: newProps,
+                dom: matchingOldFiber.dom,
+                parent: wipFiber,
+                alternate: matchingOldFiber,
+                effectTag: "UPDATE",
+                hookIndex: 0,
+                hooks: matchingOldFiber.hooks || [],
+            };
+        } else if (element) {
             newFiber = {
                 type: element.type || "TEXT_NODE",
-                props: element.props || {nodeValue: element},
+                props: element.props || { nodeValue: element },
                 dom: null,
                 parent: wipFiber,
                 alternate: null,
                 effectTag: "PLACEMENT",
-                hookIndex : 0,
-            }
+                hookIndex: 0,
+                hooks: [],
+            };
         }
-        if (!sameType && oldFiber) {
-            // console.error("DELETION HERE ", oldFiber)
-            oldFiber.effectTag = "DELETION";
-            if (oldFiber.child?.type == Fragment)
-                oldFiber.child.effectTag = "DELETION";
-            globalState.deletions.push(oldFiber);
-        }
-        if (oldFiber) {
-            oldFiber = oldFiber.sibling;
-        }
-        if (index === 0) {
+                if (i === 0) {
             wipFiber.child = newFiber;
-        } else if (element){
-        if (prevSibling) {
+        } else if (prevSibling && newFiber) {
             prevSibling.sibling = newFiber;
         }
+        
+        if (newFiber) {
+            prevSibling = newFiber;
         }
-        prevSibling = newFiber;
-        index++;
+    }
+    for (const oldFib of oldFibersByIndex) {
+        if (!usedOldFibers.has(oldFib)) {
+            oldFib.effectTag = "DELETION";
+            globalState.deletions.push(oldFib);
+        }
     }
 }
 
@@ -137,11 +154,26 @@ export function render(elm: VNode | TextVNode, container: Element) {
 }
 
 function commitRoot() {
+    const activeElement = document.activeElement;
+    const focusInfo = activeElement ? {
+        element: activeElement,
+        selectionStart: (activeElement as HTMLInputElement).selectionStart,
+        selectionEnd: (activeElement as HTMLInputElement).selectionEnd,
+    } : null;
+    console.log(activeElement, focusInfo)
     console.warn("commitRoot", globalState.wipRoot)
     globalState.deletions.forEach(commitWork);
     commitWork(globalState.wipRoot?.child);
     
-    // ✅ Clean up any remaining empty queues after commit
+     if (focusInfo && document.contains(focusInfo.element)) {
+        (focusInfo.element as HTMLElement).focus();
+        
+        if (focusInfo.element instanceof HTMLInputElement || focusInfo.element instanceof HTMLTextAreaElement) {
+            if (focusInfo.selectionStart !== null && focusInfo.selectionEnd !== null) {
+                focusInfo.element.setSelectionRange(focusInfo.selectionStart, focusInfo.selectionEnd);
+            }
+        }
+    }
     for (const [key, queue] of  globalState.hookQueues.entries()) {
         if (queue.length === 0) {
             globalState.hookQueues.delete(key);
@@ -150,10 +182,6 @@ function commitRoot() {
     
     globalState.currentRoot = globalState.wipRoot;
     globalState.wipRoot = null;
-}
-function findAppFiber(root: Maybe<FiberNode>): Maybe<FiberNode> {
-    // Navigate to find the App component fiber
-    return root?.child; // Adjust this based on your fiber tree structure
 }
 
 function commitWork(fiber : Maybe<FiberNode>) {
@@ -168,7 +196,7 @@ function commitWork(fiber : Maybe<FiberNode>) {
     const domParent = domParentFiber?.dom
     if (domParent && fiber.parent?.effectTag != 'DELETION'  && fiber.effectTag === "PLACEMENT" &&  fiber.dom != null && fiber.type !== "frag")
     {
-        // console.log("Placing", fiber.type, fiber.dom);
+        console.log("Placing", fiber.type, fiber.dom);
         domParent.appendChild(fiber.dom as Element | Text);
     }
     else if (fiber.effectTag === "UPDATE" && fiber.dom) {
@@ -196,6 +224,7 @@ function commitDeletion(fiber: Maybe<FiberNode>, domParent: Element | Text) {
     // console.log("Called !");
     if (fiber.dom) {
         // console.warn("deleted!", fiber, domParent);
+        if (domParent.contains(fiber.dom)) 
             domParent.removeChild(fiber.dom);
     } else {
 
@@ -241,9 +270,12 @@ function updateFunctionComponent(fiber : FiberNode) {
   fiber.hooks ??= [];
   globalState.currentFiber = fiber;
   
-  const children = [fiber.type(fiber.props)]
-  console.error(fiber.props)
+  const children = [fiber.type(fiber.props)].filter(child => 
+        child !== null  && child !== undefined
+    );
+  console.warn(children)
 //   console.log("Function component", fiber.type, children)
+   console.log("Amount of children", children.length)
   recouncilChildren(children, fiber)
 }
 
@@ -251,5 +283,7 @@ function updateHostComponent(fiber : FiberNode) {
   if (!fiber.dom) {
     fiber.dom = fiber.type !== "frag" ? createDom(fiber) : fiber.parent?.dom
   }
-  recouncilChildren(fiber.props.children || [], fiber);
+     console.warn("Amount of children", (fiber.props.children || []).length)
+
+  recouncilChildren(fiber.props.children?.filter(e=> e != null && e !== undefined) || [], fiber);
 }

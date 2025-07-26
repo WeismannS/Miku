@@ -6,6 +6,7 @@ import { workLoop } from "./src/render/render.ts";
 import { globalState } from "./src/globals/globals";
 const aa = document.body.querySelector("#app");
 
+
 // Type definitions
 type Todo = {
   id: number;
@@ -69,7 +70,6 @@ const TodoApp: React.FC = () => {
 
   // Keyboard shortcut effect
   useEffect(() => {
-    console.log("done")
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Enter' && e.ctrlKey) {
         document.getElementById('add-button')?.click();
@@ -77,10 +77,7 @@ const TodoApp: React.FC = () => {
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    return () =>{
-      console.log("cleared this")
-       window.removeEventListener('keydown', handleKeyDown);
-    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const addTodo = (): void => {
@@ -94,7 +91,7 @@ const TodoApp: React.FC = () => {
     };
     
     setTodos([...todos, newTodo]);
-    setInputValue('');
+    setInputValue(''); // Clear input after adding
     setNotification({ type: 'add', text: 'Todo added!' });
   };
 
@@ -122,17 +119,45 @@ const TodoApp: React.FC = () => {
 
   const completedCount = todos.filter(t => t.completed).length;
   const activeCount = todos.length - completedCount;
-
+  console.error(todos)
   return (
-    <div className="bg-white rounded-2xl shadow-xl p-6 mt-10 transition-all duration-300 hover:shadow-2xl">
-      <h1 className="text-3xl font-bold text-center text-indigo-700 mb-2">Fancy Todo List</h1>
-      <p className="text-gray-500 text-center mb-6">Ctrl+Enter to add todos</p>
+    <div 
+      key="todo-app-container"
+      className="bg-white rounded-2xl shadow-xl p-6 mt-10 transition-all duration-300 hover:shadow-2xl"
+    >
+      <h1 
+        key="app-title"
+        className="text-3xl font-bold text-center text-indigo-700 mb-2"
+      >
+        Fancy Todo List
+      </h1>
       
-   
+      <p 
+        key="app-subtitle"
+        className="text-gray-500 text-center mb-6"
+      >
+        Ctrl+Enter to add todos
+      </p>
       
-      {/* Input Section */}
-      <div className="flex gap-2 mb-6">
+      {/* ✅ Input Section - Fixed key for stable identity */}
+      <div 
+        key="input-section"
+        className="flex gap-2 mb-6"
+      >
+        {/* ✅ Notification - Moved to END and with stable key */}
+      {notification && (
+        <div 
+          key="notification" // ✅ Stable key for notification
+          className={`fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg transform transition-transform duration-300 ${
+            notification?.type === 'add' ? 'bg-green-500' :
+            notification?.type === 'delete' ? 'bg-red-500' : 'bg-blue-500'
+          } text-white animate-bounce`}
+        >
+          {notification?.text}
+        </div>
+      )}
         <input
+          key="todo-input" // ✅ CRITICAL: Stable key prevents recreation
           type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
@@ -141,6 +166,7 @@ const TodoApp: React.FC = () => {
           className="flex-grow px-4 py-3 rounded-lg border-2 border-indigo-200 focus:border-indigo-500 focus:outline-none transition-colors"
         />
         <button
+          key="add-button"
           id="add-button"
           onClick={addTodo}
           className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 rounded-lg font-medium transition-colors shadow-md hover:shadow-lg"
@@ -149,17 +175,23 @@ const TodoApp: React.FC = () => {
         </button>
       </div>
       
-      {/* Stats */}
-      <div className="flex justify-between text-sm text-gray-500 mb-4">
-        <span>{activeCount} active</span>
-        <span>{completedCount} completed</span>
+      {/* ✅ Stats Section */}
+      <div 
+        key="stats-section"
+        className="flex justify-between text-sm text-gray-500 mb-4"
+      >
+        <span key="active-count">{activeCount} active</span>
+        <span key="completed-count">{completedCount} completed</span>
       </div>
       
-      {/* Filter Buttons */}
-      <div className="flex justify-center gap-4 mb-6">
+      {/* ✅ Filter Buttons Section */}
+      <div 
+        key="filter-section"
+        className="flex justify-center gap-4 mb-6"
+      >
         {(['all', 'active', 'completed'] as const).map(f => (
           <button
-            key={f}
+            key={`filter-${f}`} // ✅ Stable key for each filter button
             onClick={() => setFilter(f)}
             className={`px-4 py-2 rounded-full capitalize transition-colors ${
               filter === f 
@@ -172,30 +204,38 @@ const TodoApp: React.FC = () => {
         ))}
       </div>
       
-      {/* Todo List */}
-      <ul className="space-y-3 mb-6 max-h-96 overflow-y-auto pr-2">
+      {/* ✅ Todo List Section */}
+      <ul 
+        key="todo-list"
+        className="space-y-3 mb-6 max-h-96 overflow-y-auto pr-2"
+      >
         {filteredTodos.length === 0 ? (
-          <li className="text-center py-8 text-gray-500">
+          <li 
+            key="empty-state"
+            className="text-center py-8 text-gray-500"
+          >
             No todos found. Add a new todo to get started!
           </li>
         ) : (
           filteredTodos.map(todo => (
             <li 
-              key={todo.id}
+              key={`todo-${todo.id}`} // ✅ Unique key based on todo ID
               className={`flex items-center justify-between p-4 rounded-xl transition-all duration-300 ${
                 todo.completed 
                   ? 'bg-green-50 border border-green-200' 
                   : 'bg-indigo-50 border border-indigo-200'
               }`}
             >
-              <div className="flex items-center">
+              <div key={`todo-content-${todo.id}`} className="flex items-center">
                 <input
+                  key={`checkbox-${todo.id}`} // ✅ Unique key for each checkbox
                   type="checkbox"
                   checked={todo.completed}
                   onChange={() => toggleTodo(todo.id)}
                   className="h-5 w-5 text-indigo-600 rounded focus:ring-indigo-500"
                 />
                 <span 
+                  key={`text-${todo.id}`} // ✅ Unique key for each todo text
                   className={`ml-3 text-lg ${
                     todo.completed 
                       ? 'line-through text-gray-500' 
@@ -206,11 +246,24 @@ const TodoApp: React.FC = () => {
                 </span>
               </div>
               <button
+                key={`delete-${todo.id}`} // ✅ Unique key for each delete button
                 onClick={() => deleteTodo(todo.id)}
                 className="text-red-500 hover:text-red-700 transition-colors"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                <svg 
+                  key={`delete-icon-${todo.id}`}
+                  xmlns="http://www.w3.org/2000/svg" 
+                  className="h-6 w-6" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" 
+                  />
                 </svg>
               </button>
             </li>
@@ -218,9 +271,13 @@ const TodoApp: React.FC = () => {
         )}
       </ul>
       
-      {/* Clear Button */}
-      <div className="flex justify-center">
+      {/* ✅ Clear Button Section */}
+      <div 
+        key="clear-section"
+        className="flex justify-center"
+      >
         <button
+          key="clear-completed-button"
           onClick={clearCompleted}
           disabled={completedCount === 0}
           className={`px-5 py-2 rounded-lg font-medium transition-all ${
@@ -232,9 +289,12 @@ const TodoApp: React.FC = () => {
           Clear Completed
         </button>
       </div>
+      
+      
     </div>
   );
 };
+
 
 if (aa) Miku.render(<TodoApp />, aa);
 
