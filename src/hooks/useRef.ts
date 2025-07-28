@@ -3,9 +3,8 @@ import { globalState } from "../globals/globals.ts";
 
 
 export function useRef<T>(initialValue: T): { current: T } {
-    if (!globalState.currentFiber) {
+    if (!globalState.currentFiber)
         throw new Error("Not in a function Component!");
-    }
     const currentFiber = globalState.currentFiber;
     const oldHook = currentFiber.alternate?.hooks?.[currentFiber.hookIndex];
     
@@ -13,8 +12,7 @@ export function useRef<T>(initialValue: T): { current: T } {
         tag: "REF",
         value: oldHook ? oldHook.value : initialValue,
     };
-    
-    currentFiber.hooks?.push(hook);
+    currentFiber.hooks[currentFiber.hookIndex] = hook;
     currentFiber.hookIndex++;
     
     return { current: hook.value };

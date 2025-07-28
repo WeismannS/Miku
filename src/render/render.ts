@@ -148,6 +148,7 @@ export function render(elm: VNode | TextVNode, container: Element) {
         },
         alternate : globalState.currentRoot,
         hookIndex : 0,
+        hooks: [],
     }
     
     globalState.nextUnitOfWork = globalState.wipRoot;

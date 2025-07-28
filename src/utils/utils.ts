@@ -22,10 +22,23 @@ export function setAttributes(elm: Element, props: Props, oldProps?: Props) {
       elm.addEventListener(eventName, value as EventListener);
     } else if (key === "nodeValue" && elm.nodeType == Node.TEXT_NODE) {
       (elm as unknown as Text).nodeValue = value as string;
-    } else if (typeof value !== "boolean") {
+    }
+      else if (key == "ref")
+      {
+        if (typeof value === "function") {
+          value(elm);
+        } else if (value && typeof value === "object" && "current" in value) {
+          value.current = elm;
+        } else {
+          console.warn("Invalid ref type", value);
+        }
+      }
+     else if (typeof value !== "boolean") {
       console.log("Setting attribute", key, value);
       if (key == "className")
-      elm.setAttribute("class", String(value));
+        elm.setAttribute("class", String(value));
+      else
+        elm.setAttribute(key, String(value));
     }
   }
 }

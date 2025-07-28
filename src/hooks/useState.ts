@@ -17,23 +17,22 @@ export function useState<T>(
 
   let newState = oldHook ? oldHook.state : (typeof initial === "function" ? (initial as () => T)() : initial);
 
-  // ✅ Process any pending updates for this specific hook
   if (oldHook?.queue) {
     oldHook.queue.forEach((action: (old: T) => T) => {
       newState = action(newState);
     });
-    oldHook.queue = []; // Clear the queue
+    oldHook.queue = []; 
   }
 
   const hook = {
+    tag : "STATE",
     state: newState,
     queue: [] as Array<(state: T) => T>,
   };
 
   const setState = (action: T | ((oldState: T) => T)) => {
     const update = typeof action === "function" ? (action as (old: T) => T) : () => action;
-    
-    // ✅ Add update to this specific hook's queue
+
     hook.queue.push(update);
 
     if (!globalState.nextUnitOfWork && globalState.currentRoot) {
@@ -42,17 +41,15 @@ export function useState<T>(
         dom: globalState.currentRoot.dom,
         props: globalState.currentRoot.props,
         alternate: globalState.currentRoot,
+        hooks: [],
         hookIndex: 0,
       };
       globalState.nextUnitOfWork = globalState.wipRoot;
       globalState.deletions = [];
     }
   };
- if (oldHook) {
-    // Update the existing hook
+ if (oldHook)
     oldHook.state = newState;
- }
-  currentFiber.hooks = currentFiber.hooks || [];
   currentFiber.hooks[hookIndex] = hook;
   currentFiber.hookIndex++;
 

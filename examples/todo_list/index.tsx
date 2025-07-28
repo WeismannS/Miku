@@ -1,9 +1,5 @@
-import { FormEvent } from "react";
-import { useState } from "./src/hooks/useState.ts";
-import { useEffect } from "./src/hooks/useEffect.ts";
-import * as Miku from "./src/index.ts";
-import { workLoop } from "./src/render/render.ts";
-import { globalState } from "./src/globals/globals";
+import Miku, {useState, useEffect} from "Miku";
+import { workLoop } from "../../src/render/render.ts";
 const aa = document.body.querySelector("#app");
 
 // Type definitions
@@ -72,12 +68,15 @@ const TodoApp: React.FC = () => {
     console.log("done")
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Enter' && e.ctrlKey) {
-        addTodo();
-
+        document.getElementById('add-button')?.click();
+      }
     };
-  }
-    window.addEventListener('keydown', handleKeyDown);
 
+    window.addEventListener('keydown', handleKeyDown);
+    return () =>{
+      console.log("cleared this")
+       window.removeEventListener('keydown', handleKeyDown);
+    }
   }, []);
 
   const addTodo = (): void => {
@@ -214,15 +213,7 @@ const TodoApp: React.FC = () => {
           ))
         )}
       </ul>
-      {/* Notification */
-      notification && (
-        <div className={`fixed bottom-4 right-4 p-4 rounded-lg shadow
-          ${notification.type === 'add' ? 'bg-green-100 text-green-800' :
-            notification.type === 'delete' ? 'bg-red-100 text-red-800' :
-            'bg-blue-100 text-blue-800'}`}>
-          {notification?.text}
-        </div>
-      )}
+      
       {/* Clear Button */}
       <div className="flex justify-center">
         <button

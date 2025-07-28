@@ -19,6 +19,6 @@ export function useEffect( fn : (() => void) | (  () => (()=>void)), dependencie
         globalState.pendingEffects.push(fn);
     }
     hook.dependencies = dependencies || [];
-    currentFiber.hooks?.push(hook)
+    currentFiber.hooks[currentFiber.hookIndex] = hook;
     currentFiber.hookIndex++;
 }
