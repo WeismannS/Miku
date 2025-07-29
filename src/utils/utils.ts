@@ -83,3 +83,4 @@ export function isEventListener(event: string): boolean {
 export function isTextNode(elm: VNode | TextVNode): elm is TextVNode {
   return elm.type == "TEXT_NODE";
 }
+
