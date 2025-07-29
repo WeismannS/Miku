@@ -13,7 +13,19 @@ export const workLoop: IdleRequestCallback = function (deadline) {
     if (!globalState.nextUnitOfWork && globalState.wipRoot)
     {
         commitRoot();
-        globalState.pendingEffects = globalState.pendingEffects.map(e=> e()).filter( e=> e!=undefined)
+        for (const {fn, dependencies, fiber, hookIndex} of globalState.pendingEffects) {
+            const cleanUp = fn();
+            if (typeof cleanUp === "function") {
+                const currentHook = fiber.hooks[hookIndex];
+                if (currentHook) {
+                    currentHook.cleanUp = cleanUp;
+                } else {
+                    console.warn("No hook found for effect cleanup at index", hookIndex, "in fiber", fiber.type);
+                }
+            }
+            
+        }
+        globalState.pendingEffects = [];
     }
     requestIdleCallback(workLoop);
 }
@@ -199,6 +211,7 @@ function commitWork(fiber : Maybe<FiberNode>) {
         // console.log("Updating", fiber.type, fiber.dom);
         updateDom(fiber.dom as Element | Text, fiber.alternate?.props || {}, fiber.props);
    } else if (fiber.effectTag === "DELETION") {
+
     // console.error("Deleting", fiber)
     commitDeletion(fiber, domParent as Element | Text);
 }

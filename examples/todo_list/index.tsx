@@ -46,12 +46,16 @@ const useNotification = () => {
   const [notification, setNotification] = useState<NotificationType | null>(null);
 
   useEffect(() => {
+    console.log('hmm cleared pepe')
     if (notification) {
       const timer = setTimeout(() => {
         setNotification(null);
       }, 3000);
-      return () => clearTimeout(timer);
-    }
+      return () => {
+        console.log("Notification cleared");
+        clearTimeout(timer);
+    
+        }  }
   }, [notification]);
 
   return [notification, setNotification] as const;
@@ -227,6 +231,15 @@ const TodoApp: React.FC = () => {
         >
           Clear Completed
         </button>
+        {notification && (
+          <div className={`ml-4 px-4 py-2 rounded-lg text-white transition-all ${
+            notification.type === 'add' ? 'bg-green-500' :
+            notification.type === 'delete' ? 'bg-red-500' :
+            notification.type === 'clear' ? 'bg-yellow-500' : 'bg-gray-500'
+          }`}>
+            {notification.text}
+          </div>
+        )}
       </div>
     </div>
   );

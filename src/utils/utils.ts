@@ -37,10 +37,43 @@ export function setAttributes(elm: Element, props: Props, oldProps?: Props) {
       console.log("Setting attribute", key, value);
       if (key == "className")
         elm.setAttribute("class", String(value));
+      else if (key == "style" && typeof value === "object"){
+        elm.setAttribute("style", parseStyleObject(value));
+      }
       else
         elm.setAttribute(key, String(value));
     }
   }
+}
+
+
+
+function camelToKebab(str : string) {
+  return str.replace(/[A-Z]/g, (letter : string) => `-${letter.toLowerCase()}`)
+}
+const unitlessProperties = new Set([
+  'zIndex', 'opacity', 'fontWeight', 'lineHeight', 'flex', 
+  'flexGrow', 'flexShrink', 'order', 'animationIterationCount'
+])
+
+function formatValue(property : string, value : any): string {
+  if (typeof value === 'number') {
+    return unitlessProperties.has(property) ? value.toString() : `${value}px`
+  }
+  return value
+}
+
+
+function parseStyleObject(styleObj : Record<string, any> | null): string {
+  if (!styleObj) return ''
+  
+  return Object.entries(styleObj)
+    .map(([property, value]) => {
+      const cssProperty = camelToKebab(property)
+      const cssValue = formatValue(property, value)
+      return `${cssProperty}: ${cssValue}`
+    })
+    .join('; ')
 }
 
 export function isEventListener(event: string): boolean {
