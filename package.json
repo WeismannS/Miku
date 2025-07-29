@@ -1,13 +1,10 @@
 {
   "dependencies": {
     "@tailwindcss/cli": "^4.1.11",
-    "react": "^19.1.0",
     "tailwindcss": "^4.1.11",
     "tsc": "^2.0.4"
   },
-  "scripts": {
-    
-  },
+  "scripts": {},
   "devDependencies": {
     "@types/react": "^19.1.8",
     "typescript": "^5.8.3"

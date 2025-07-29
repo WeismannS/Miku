@@ -3,11 +3,14 @@ import Miku from "../index.ts";
 
 
 
-export default function Router({path, Component}: {path: string, Component: FunctionComponent}) {
-  const currentPath = window.location.pathname;
-  if (currentPath === path)
-    return <Component />;
-
+export  function Router({path, Component}: {path: string, Component: FunctionComponent}) {
+  const url = new URL(window.location.href);
+  console.log("Current URL:", url.pathname);
+  if (url.pathname === path)
+    {
+      console.log("Rendering component for path:", path);
+      return <Component />;
+    }
   return null;
 }
 
