@@ -20,7 +20,7 @@ export const workLoop: IdleRequestCallback = function (deadline) {
                 if (currentHook) {
                     currentHook.cleanUp = cleanUp;
                 } else {
-                    console.warn("No hook found for effect cleanup at index", hookIndex, "in fiber", fiber.type);
+                    // console.warn("No hook found for effect cleanup at index", hookIndex, "in fiber", fiber.type);
                 }
             }
             
@@ -39,7 +39,7 @@ function performUnitOfWork(fiber: FiberNode | null): Maybe<FiberNode> {
     // console.log("Performing unit of work for function component", fiber.type, fiber.props);
     updateFunctionComponent(fiber)
   } else {
-    console.log(fiber)
+    // console.log(fiber)
     // console.log("Performing unit of work for fiber", fiber.type, fiber.props);
     updateHostComponent(fiber)
   }
@@ -61,7 +61,7 @@ function findNextSibling(fiber: FiberNode): Maybe<FiberNode> {
     return null;
 }
 export function createDom(fiber : FiberNode) {
-    console.log("Creating DOM for fiber", fiber.type, fiber.props);
+    // console.log("Creating DOM for fiber", fiber.type, fiber.props);
     const dom = isTextNode(fiber)
         ? document.createTextNode(fiber.props.nodeValue)
         : document.createElement(fiber.type as string);
@@ -70,7 +70,18 @@ export function createDom(fiber : FiberNode) {
         setAttributes(dom as Element, fiber.props)
     return dom
 }
+const generateKey = (element: VNode, index: number) => {
+    if (element?.props?.key) return element.props.key;
     
+    // Use element type + some stable identifier
+    const type = element?.type || 'text';
+    const identifier = element?.props?.htmlFor || 
+                      element?.props?.name || 
+                      element?.props?.id || 
+                      `${type}_${index}`;
+    
+    return `${type}:${identifier}`;
+};
 function recouncilChildren(elements: VNode[], wipFiber: FiberNode) {
     let index = 0;
     let prevSibling: Maybe<FiberNode> = null;
@@ -81,7 +92,7 @@ function recouncilChildren(elements: VNode[], wipFiber: FiberNode) {
     let oldFiber = wipFiber.alternate?.child;
     let oldIndex = 0;
     while (oldFiber) {
-        const key = oldFiber.props?.key ?? `__index_${oldIndex}`;
+        const key = generateKey(oldFiber, oldIndex);
         oldFiberMap.set(key, oldFiber);
         oldFibersByIndex.push(oldFiber);
         oldFiber = oldFiber.sibling;
@@ -173,8 +184,8 @@ function commitRoot() {
         selectionStart: (activeElement as HTMLInputElement).selectionStart,
         selectionEnd: (activeElement as HTMLInputElement).selectionEnd,
     } : null;
-    console.log(activeElement, focusInfo)
-    console.warn("commitRoot", globalState.wipRoot)
+    // console.log(activeElement, focusInfo)
+    // console.warn("commitRoot", globalState.wipRoot)
     globalState.deletions.forEach(commitWork);
     commitWork(globalState.wipRoot?.child);
     
@@ -245,7 +256,7 @@ function commitDeletion(fiber: Maybe<FiberNode>, domParent: Element | Text) {
 }
 
 function updateDom(dom: Element | Text, oldProps: Props, newProps: Props) {
-    console.log("Updating DOM", oldProps, newProps)
+    // console.log("Updating DOM", oldProps, newProps)
     // Only handle non-event attributes here
     for (const key in oldProps) {
         if (!(key in newProps)) {
@@ -260,13 +271,13 @@ function updateDom(dom: Element | Text, oldProps: Props, newProps: Props) {
         setAttributes(dom as Element, newProps, oldProps);
     }
     if (dom.nodeType === Node.TEXT_NODE) {
-        console.warn("Updating text node:", {
-            oldText: oldProps.nodeValue,
-            newText: newProps.nodeValue,
-            domBefore: (dom as Text).nodeValue
-        });
+        // console.warn("Updating text node:", {
+        //     oldText: oldProps.nodeValue,
+        //     newText: newProps.nodeValue,
+        //     domBefore: (dom as Text).nodeValue
+        // });
         (dom as Text).nodeValue = newProps.nodeValue as string;
-        console.warn("Text node after update:", (dom as Text).nodeValue);
+        // console.warn("Text node after update:", (dom as Text).nodeValue);
     }
 }
 
@@ -274,7 +285,7 @@ function updateFunctionComponent(fiber : FiberNode) {
     if (!fiber.type || typeof fiber.type !== "function") {
         throw new Error("Fiber type is not a function component");
     }
-    console.log(`updateFunctionComponent called for:`, fiber.type.name);
+    // console.log(`updateFunctionComponent called for:`, fiber.type.name);
 
   fiber.hooks ??= [];
   globalState.currentFiber = fiber;
@@ -282,9 +293,9 @@ function updateFunctionComponent(fiber : FiberNode) {
   const children = [fiber.type(fiber.props)].filter(child => 
         child !== null  && child !== undefined
     );
-  console.warn(children)
+//   console.warn(children)
 //   console.log("Function component", fiber.type, children)
-   console.log("Amount of children", children.length)
+//    console.log("Amount of children", children.length)
   recouncilChildren(children, fiber)
 }
 
@@ -292,7 +303,7 @@ function updateHostComponent(fiber : FiberNode) {
   if (!fiber.dom) {
     fiber.dom = fiber.type !== "frag" ? createDom(fiber) : fiber.parent?.dom
   }
-     console.warn("Amount of children", (fiber.props.children || []).length)
+    //  console.warn("Amount of children", (fiber.props.children || []).length)
 
   recouncilChildren(fiber.props.children?.filter(e=> e != null && e !== undefined) || [], fiber);
 }

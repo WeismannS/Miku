@@ -5,7 +5,7 @@ export function setAttributes(elm: Element, props: Props, oldProps?: Props) {
     for (let [key, value] of Object.entries(oldProps)) {
       if (key === "children") continue;
       if (key.startsWith("on") && isEventListener(key)) {
-        console.log("Removing old event listener", key, value);
+        // console.log("Removing old event listener", key, value);
         const eventName = key.slice(2).toLowerCase();
         elm.removeEventListener(eventName, value as EventListener);
       }
@@ -14,10 +14,13 @@ export function setAttributes(elm: Element, props: Props, oldProps?: Props) {
 
   for (let [key, value] of Object.entries(props)) {
     if (key === "children") continue;
-    if (typeof value == "boolean" && value == true) {
-      elm.setAttribute(key, "");
+    if (typeof value == "boolean") {
+      if (value)
+        elm.setAttribute(key, "");
+      else 
+        elm.removeAttribute(key);
     } else if (key.startsWith("on")) {
-      console.log("Adding event listener", key, value);
+      // console.log("Adding event listener", key, value);
       const eventName = key.slice(2).toLowerCase();
       elm.addEventListener(eventName, value as EventListener);
     } else if (key === "nodeValue" && elm.nodeType == Node.TEXT_NODE) {
@@ -30,11 +33,11 @@ export function setAttributes(elm: Element, props: Props, oldProps?: Props) {
         } else if (value && typeof value === "object" && "current" in value) {
           value.current = elm;
         } else {
-          console.warn("Invalid ref type", value);
+          // console.warn("Invalid ref type", value);
         }
       }
      else if (typeof value !== "boolean") {
-      console.log("Setting attribute", key, value);
+      // console.log("Setting attribute", key, value);
       if (key == "className")
         elm.setAttribute("class", String(value));
       else if (key == "style" && typeof value === "object"){
