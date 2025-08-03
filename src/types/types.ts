@@ -33,4 +33,4 @@ export interface FiberNode extends VNode {
 
 
 export type Maybe<T>  = T | undefined | null
-export type FunctionComponent = (props: Props) => VNode;
+export type FunctionComponent = (props: Props | any) => VNode;
