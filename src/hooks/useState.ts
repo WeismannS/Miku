@@ -33,7 +33,8 @@ export function useState<T>(
   
   const setState = (action: T | ((oldState: T) => T)) => {
     const update = typeof action === "function" ? (action as (old: T) => T) : () => action;
-    hook.queue.push(update);
+    if (hook && hook.queue)
+        hook.queue.push(update);
     
     if (!globalState.nextUnitOfWork && globalState.currentRoot) {
       globalState.wipRoot = {

@@ -13,7 +13,7 @@ export function useEffect( fn : (() => void) | (  () => (()=>void)), dependencie
         dependencies : oldHook ? oldHook.dependencies as any[] : [],
         cleanUp : oldHook ? oldHook.cleanUp : undefined,
     }
-    const applyEffect = oldHook == undefined  || dependencies == undefined || (hook.dependencies.some((e, i)  => !Object.is(e, dependencies[i]))) || dependencies.length != hook.dependencies.length
+    const applyEffect = oldHook == undefined  || dependencies == undefined || ( hook?.dependencies?.some((e, i)  => !Object.is(e, dependencies[i]))) || dependencies.length != hook?.dependencies?.length
     if (applyEffect)
     {
         if (oldHook?.cleanUp)

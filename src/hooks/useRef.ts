@@ -2,7 +2,7 @@ import { globalState } from "../globals/globals.ts";
 
 
 
-export function useRef<T>(initialValue: T): { current: T } {
+export function useRef<T>(initialValue?: T): { current: T } {
     if (!globalState.currentFiber)
         throw new Error("Not in a function Component!");
     const currentFiber = globalState.currentFiber;
