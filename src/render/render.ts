@@ -82,6 +82,8 @@ const generateKey = (element: VNode, index: number) => {
     
     return `${type}:${identifier}`;
 };
+
+// ORIGINAL RECONCILIATION LOGIC - UNCHANGED
 function recouncilChildren(elements: VNode[], wipFiber: FiberNode) {
     let index = 0;
     let prevSibling: Maybe<FiberNode> = null;
@@ -203,6 +205,46 @@ function commitRoot() {
     globalState.wipRoot = null;
 }
 
+// NEW HELPER FUNCTIONS FOR DOM INSERTION
+function findNextSiblingDomNode(fiber: FiberNode): Element | Text | null {
+    let sibling = fiber.sibling;
+    
+    while (sibling) {
+        if (sibling.dom && sibling.effectTag !== "DELETION") {
+            return sibling.dom as Element | Text;
+        }
+        
+        // If sibling doesn't have a dom node, check its children
+        if (sibling.child && sibling.effectTag !== "DELETION") {
+            const childDom = findFirstDomNode(sibling.child);
+            if (childDom) {
+                return childDom;
+            }
+        }
+        
+        sibling = sibling.sibling;
+    }
+    
+    return null;
+}
+
+function findFirstDomNode(fiber: FiberNode): Element | Text | null {
+    if (fiber.dom && fiber.effectTag !== "DELETION") {
+        return fiber.dom as Element | Text;
+    }
+    
+    if (fiber.child && fiber.effectTag !== "DELETION") {
+        return findFirstDomNode(fiber.child);
+    }
+    
+    if (fiber.sibling) {
+        return findFirstDomNode(fiber.sibling);
+    }
+    
+    return null;
+}
+
+// UPDATED COMMITWORK WITH INSERTBEFORE LOGIC
 function commitWork(fiber : Maybe<FiberNode>) {
     if (!fiber)
         return
@@ -216,7 +258,14 @@ function commitWork(fiber : Maybe<FiberNode>) {
     if (domParent && fiber.parent?.effectTag != 'DELETION'  && fiber.effectTag === "PLACEMENT" &&  fiber.dom != null && fiber.type !== "frag")
     {
         console.log("Placing", fiber.type, fiber.dom);
-        domParent.appendChild(fiber.dom as Element | Text);
+        
+        // THE BIG FIX: Find correct position and use insertBefore
+        const beforeNode = findNextSiblingDomNode(fiber);
+        if (beforeNode && domParent.contains(beforeNode)) {
+            domParent.insertBefore(fiber.dom as Element | Text, beforeNode);
+        } else {
+            domParent.appendChild(fiber.dom as Element | Text);
+        }
     }
     else if (fiber.effectTag === "UPDATE" && fiber.dom) {
         // console.log("Updating", fiber.type, fiber.dom);
