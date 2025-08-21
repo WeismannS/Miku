@@ -2,3 +2,5 @@ node_modules
 *.js
 dist
 output.csssrc/input.css
+*.lock
+*.lock*

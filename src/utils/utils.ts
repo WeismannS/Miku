@@ -43,8 +43,11 @@ export function setAttributes(elm: Element, props: Props, oldProps?: Props) {
       else if (key == "style" && typeof value === "object"){
         elm.setAttribute("style", parseStyleObject(value));
       }
+      else if (key == "ref" && value?.current !== undefined)
+        value.current = elm;
       else
         elm.setAttribute(key, String(value));
+
     }
   }
 }

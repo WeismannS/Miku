@@ -82,6 +82,7 @@ const generateKey = (element: VNode, index: number) => {
     
     return `${type}:${identifier}`;
 };
+
 function recouncilChildren(elements: VNode[], wipFiber: FiberNode) {
     let index = 0;
     let prevSibling: Maybe<FiberNode> = null;
@@ -100,14 +101,26 @@ function recouncilChildren(elements: VNode[], wipFiber: FiberNode) {
     }
     
     const usedOldFibers = new Set<FiberNode>();
+    const newFibers: FiberNode[] = [];
+    
     for (let i = 0; i < elements.length; i++) {
         const element = elements[i];
         const elementKey = element?.props?.key ?? `__index_${i}`; 
-        let matchingOldFiber = oldFiberMap.get(elementKey); 
+        let matchingOldFiber = oldFiberMap.get(elementKey);
+        
         if (!matchingOldFiber && oldFibersByIndex[i] && !usedOldFibers.has(oldFibersByIndex[i])) {
             const oldFiberAtPosition = oldFibersByIndex[i];
             if (oldFiberAtPosition.type === element?.type) {
                 matchingOldFiber = oldFiberAtPosition;
+            }
+        }
+        
+        if (!matchingOldFiber && !element?.props?.key) {
+            for (const oldFib of oldFibersByIndex) {
+                if (!usedOldFibers.has(oldFib) && oldFib.type === element?.type) {
+                    matchingOldFiber = oldFib;
+                    break;
+                }
             }
         }
         
@@ -117,22 +130,28 @@ function recouncilChildren(elements: VNode[], wipFiber: FiberNode) {
         let newFiber: FiberNode | null = null;
         
         if (sameType && matchingOldFiber) {
-    usedOldFibers.add(matchingOldFiber);
-    const newProps = matchingOldFiber.type === "TEXT_NODE"
-        ? { nodeValue: element.props?.nodeValue }
-        : element.props;
-        
-    newFiber = {
-        type: matchingOldFiber.type,
-        props: newProps,
-        dom: matchingOldFiber.dom,
-        parent: wipFiber,
-        alternate: matchingOldFiber,
-        effectTag: "UPDATE",
-        hookIndex: matchingOldFiber.hookIndex, // ✅ Preserve hookIndex
-        hooks: [...(matchingOldFiber.hooks || [])], // ✅ Deep copy hooks
-    };
-} else if (element) {
+            usedOldFibers.add(matchingOldFiber);
+            const newProps = matchingOldFiber.type === "TEXT_NODE"
+                ? { nodeValue: element.props?.nodeValue }
+                : element.props;
+                
+            newFiber = {
+                type: matchingOldFiber.type,
+                props: newProps,
+                dom: matchingOldFiber.dom,
+                parent: wipFiber,
+                alternate: matchingOldFiber,
+                effectTag: "UPDATE",
+                hookIndex: matchingOldFiber.hookIndex,
+                hooks: [...(matchingOldFiber.hooks || [])],
+            };
+            
+            const oldPosition = oldFibersByIndex.indexOf(matchingOldFiber);
+            if (oldPosition !== i && oldPosition !== -1) {
+                // Element moved - mark for placement
+                newFiber.effectTag = "PLACEMENT";
+            }
+        } else if (element) {
             newFiber = {
                 type: element.type || "TEXT_NODE",
                 props: element.props || { nodeValue: element },
@@ -144,16 +163,22 @@ function recouncilChildren(elements: VNode[], wipFiber: FiberNode) {
                 hooks: [],
             };
         }
-                if (i === 0) {
-            wipFiber.child = newFiber;
-        } else if (prevSibling && newFiber) {
-            prevSibling.sibling = newFiber;
-        }
         
         if (newFiber) {
-            prevSibling = newFiber;
+            newFibers.push(newFiber);
         }
     }
+    
+    for (let i = 0; i < newFibers.length; i++) {
+        const newFiber = newFibers[i];
+        
+        if (i === 0) {
+            wipFiber.child = newFiber;
+        } else {
+            newFibers[i - 1].sibling = newFiber;
+        }
+    }
+    
     for (const oldFib of oldFibersByIndex) {
         if (!usedOldFibers.has(oldFib)) {
             oldFib.effectTag = "DELETION";
@@ -203,6 +228,44 @@ function commitRoot() {
     globalState.wipRoot = null;
 }
 
+function findNextSiblingDomNode(fiber: FiberNode): Element | Text | null {
+    let sibling = fiber.sibling;
+    
+    while (sibling) {
+        if (sibling.dom && sibling.effectTag !== "DELETION") {
+            return sibling.dom as Element | Text;
+        }
+        
+        // If sibling doesn't have a dom node, check its children
+        if (sibling.child && sibling.effectTag !== "DELETION") {
+            const childDom = findFirstDomNode(sibling.child);
+            if (childDom) {
+                return childDom;
+            }
+        }
+        
+        sibling = sibling.sibling;
+    }
+    
+    return null;
+}
+
+function findFirstDomNode(fiber: FiberNode): Element | Text | null {
+    if (fiber.dom && fiber.effectTag !== "DELETION") {
+        return fiber.dom as Element | Text;
+    }
+    
+    if (fiber.child && fiber.effectTag !== "DELETION") {
+        return findFirstDomNode(fiber.child);
+    }
+    
+    if (fiber.sibling) {
+        return findFirstDomNode(fiber.sibling);
+    }
+    
+    return null;
+}
+
 function commitWork(fiber : Maybe<FiberNode>) {
     if (!fiber)
         return
@@ -216,7 +279,14 @@ function commitWork(fiber : Maybe<FiberNode>) {
     if (domParent && fiber.parent?.effectTag != 'DELETION'  && fiber.effectTag === "PLACEMENT" &&  fiber.dom != null && fiber.type !== "frag")
     {
         console.log("Placing", fiber.type, fiber.dom);
-        domParent.appendChild(fiber.dom as Element | Text);
+        
+        // Find the correct position to insert this element
+        const beforeNode = findNextSiblingDomNode(fiber);
+        if (beforeNode && domParent.contains(beforeNode)) {
+            domParent.insertBefore(fiber.dom as Element | Text, beforeNode);
+        } else {
+            domParent.appendChild(fiber.dom as Element | Text);
+        }
     }
     else if (fiber.effectTag === "UPDATE" && fiber.dom) {
         // console.log("Updating", fiber.type, fiber.dom);
@@ -257,7 +327,7 @@ function commitDeletion(fiber: Maybe<FiberNode>, domParent: Element | Text) {
 
 function updateDom(dom: Element | Text, oldProps: Props, newProps: Props) {
     // console.log("Updating DOM", oldProps, newProps)
-    // Only handle non-event attributes here
+    // only handle non-event attributes here
     for (const key in oldProps) {
         if (!(key in newProps)) {
             if (key == "children") continue;
