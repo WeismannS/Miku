@@ -6,8 +6,8 @@ import {
     FunctionComponent,
     TextVNode,
 } from "../types/types";
-import { isTextNode, setAttributes } from "../utils/utils.ts";
-import { render } from "../render/render.ts";
+import { isTextNode, setAttributes } from "../utils/utils";
+import { render } from "../render/render";
 
 function createElement(
     elm: FunctionComponent | string,
@@ -17,7 +17,7 @@ function createElement(
     const properties = {
         children: children.length > 0 ? children.flat(Infinity).map(e=> {
           if (typeof e != "object")
-              return { type: "TEXT_NODE", props: {nodeValue : e !== false ? e : ""} }
+              return { type: "TEXT_NODE", props: {nodeValue : e || "e"} }
           return e;
         }) : undefined,
         ...(props || {}),

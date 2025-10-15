@@ -1,5 +1,5 @@
-import { FunctionComponent, Props } from "../types/types.ts";
-import Miku from "../index.ts";
+import { FunctionComponent, Props } from "../types/types";
+import Miku from "../index";
 
 
 

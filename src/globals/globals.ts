@@ -1,4 +1,4 @@
-import { FiberNode, Maybe } from "../types/types.ts"
+import { FiberNode, Maybe } from "../types/types"
 
  const globalState = {
     nextUnitOfWork: null as Maybe<FiberNode>,

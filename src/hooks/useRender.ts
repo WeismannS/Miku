@@ -1,4 +1,4 @@
-import Miku from "../index.ts";
+import Miku from "../index";
 
 
 

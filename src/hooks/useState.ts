@@ -1,4 +1,4 @@
-import { globalState } from "../globals/globals.ts";
+import { globalState } from "../globals/globals";
 
 
 function getHookQueueKey(fiber: any, hookIndex: number): string {

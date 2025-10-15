@@ -1,4 +1,4 @@
-import { globalState } from "../globals/globals.ts";
+import { globalState } from "../globals/globals";
 
 
 export function useEffect( fn : (() => void) | (  () => (()=>void)), dependencies? : any[] )  : void

@@ -1,7 +1,7 @@
-import { Fragment } from "../Factory/Factory.ts";
-import { globalState } from "../globals/globals.ts";
-import { FiberNode, Maybe, Props, TextVNode, VNode} from "../types/types.ts";
-import { isEventListener, isTextNode, setAttributes } from "../utils/utils.ts";
+import { Fragment } from "../Factory/Factory";
+import { globalState } from "../globals/globals";
+import { FiberNode, Maybe, Props, TextVNode, VNode} from "../types/types";
+import { isEventListener, isTextNode, setAttributes } from "../utils/utils";
 
 
 export const workLoop: IdleRequestCallback = function (deadline) {
@@ -131,8 +131,8 @@ function recouncilChildren(elements: VNode[], wipFiber: FiberNode) {
         parent: wipFiber,
         alternate: matchingOldFiber,
         effectTag: "UPDATE",
-        hookIndex: matchingOldFiber.hookIndex, // ✅ Preserve hookIndex
-        hooks: [...(matchingOldFiber.hooks || [])], // ✅ Deep copy hooks
+        hookIndex: matchingOldFiber.hookIndex, 
+        hooks: [...(matchingOldFiber.hooks || [])],
     };
 } else if (element) {
             newFiber = {
@@ -208,13 +208,11 @@ function commitRoot() {
 // NEW HELPER FUNCTIONS FOR DOM INSERTION
 function findNextSiblingDomNode(fiber: FiberNode): Element | Text | null {
     let sibling = fiber.sibling;
-    
     while (sibling) {
         if (sibling.dom && sibling.effectTag !== "DELETION") {
             return sibling.dom as Element | Text;
         }
         
-        // If sibling doesn't have a dom node, check its children
         if (sibling.child && sibling.effectTag !== "DELETION") {
             const childDom = findFirstDomNode(sibling.child);
             if (childDom) {
@@ -258,8 +256,6 @@ function commitWork(fiber : Maybe<FiberNode>) {
     if (domParent && fiber.parent?.effectTag != 'DELETION'  && fiber.effectTag === "PLACEMENT" &&  fiber.dom != null && fiber.type !== "frag")
     {
         console.log("Placing", fiber.type, fiber.dom);
-        
-        // THE BIG FIX: Find correct position and use insertBefore
         const beforeNode = findNextSiblingDomNode(fiber);
         if (beforeNode && domParent.contains(beforeNode)) {
             domParent.insertBefore(fiber.dom as Element | Text, beforeNode);
@@ -306,7 +302,6 @@ function commitDeletion(fiber: Maybe<FiberNode>, domParent: Element | Text) {
 
 function updateDom(dom: Element | Text, oldProps: Props, newProps: Props) {
     // console.log("Updating DOM", oldProps, newProps)
-    // Only handle non-event attributes here
     for (const key in oldProps) {
         if (!(key in newProps)) {
             if (key == "children") continue;
