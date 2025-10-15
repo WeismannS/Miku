@@ -17,7 +17,7 @@ function createElement(
     const properties = {
         children: children.length > 0 ? children.flat(Infinity).map(e=> {
           if (typeof e != "object")
-              return { type: "TEXT_NODE", props: {nodeValue : e || "e"} }
+              return { type: "TEXT_NODE", props: {nodeValue : e !== false && e !== null && e !== undefined ? e : ""} }
           return e;
         }) : undefined,
         ...(props || {}),
