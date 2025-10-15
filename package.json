@@ -1,26 +1,26 @@
 {
-  "dependencies": {
-    "@tailwindcss/cli": "^4.1.11",
-    "tailwindcss": "^4.1.11",
-    "tsc": "^2.0.4"
-  },
-  "devDependencies": {
-    "@types/react": "^19.1.8",
-    "typescript": "^5.8.3"
-  },
-  "name": "miku",
-  "version": "1.0.0",
-  "description": "A minimalistic React-like library for building user interfaces",
+	"dependencies": {
+		"@tailwindcss/cli": "^4.1.11",
+		"tailwindcss": "^4.1.11",
+		"tsc": "^2.0.4"
+	},
+	"devDependencies": {
+		"@types/react": "^19.1.8",
+		"typescript": "^5.8.3"
+	},
+	"name": "miku",
+	"version": "1.0.0",
+	"description": "A minimalistic React-like library for building user interfaces",
 
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/WeismannS/Miku.git"
-  },
-  "keywords": [],
-  "author": "WeismannS",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/WeismannS/Miku/issues"
-  },
-  "homepage": "https://github.com/WeismannS/Miku#readme"
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/WeismannS/Miku.git"
+	},
+	"keywords": [],
+	"author": "WeismannS",
+	"license": "ISC",
+	"bugs": {
+		"url": "https://github.com/WeismannS/Miku/issues"
+	},
+	"homepage": "https://github.com/WeismannS/Miku#readme"
 }
