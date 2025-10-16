@@ -47,6 +47,7 @@ export function useState<T>(
 				alternate: globalState.currentRoot,
 				hooks: [],
 				hookIndex: 0,
+				cleanUp : []
 			};
 			globalState.nextUnitOfWork = globalState.wipRoot;
 			globalState.deletions = [];
