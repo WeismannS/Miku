@@ -1,13 +1,13 @@
+import { render } from "../render/render";
 import {
-	VNode,
 	FiberNode,
+	FunctionComponent,
 	MikuAttributes,
 	Props,
-	FunctionComponent,
 	TextVNode,
+	VNode,
 } from "../types/types";
 import { isTextNode, setAttributes } from "../utils/utils";
-import { render } from "../render/render";
 
 function createElement(
 	elm: FunctionComponent | string,

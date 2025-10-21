@@ -1,8 +1,5 @@
 import { globalState } from "../globals/globals";
 
-function getHookQueueKey(fiber: any, hookIndex: number): string {
-	return `${fiber.type?.name || "component"}-${hookIndex}`;
-}
 export function useState<T>(
 	initial: T | (() => T),
 ): [T, (arg: T | ((oldState: T) => T)) => void] {
@@ -47,7 +44,7 @@ export function useState<T>(
 				alternate: globalState.currentRoot,
 				hooks: [],
 				hookIndex: 0,
-				cleanUp : []
+				cleanUp: [],
 			};
 			globalState.nextUnitOfWork = globalState.wipRoot;
 			globalState.deletions = [];

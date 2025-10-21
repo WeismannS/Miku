@@ -11,12 +11,7 @@ export const workLoop: IdleRequestCallback = function (deadline) {
 	}
 	if (!globalState.nextUnitOfWork && globalState.wipRoot) {
 		commitRoot();
-		for (const {
-			fn,
-			dependencies,
-			fiber,
-			hookIndex,
-		} of globalState.pendingEffects) {
+		for (const { fn, fiber, hookIndex } of globalState.pendingEffects) {
 			const cleanUp = fn();
 			if (typeof cleanUp === "function") {
 				const currentHook = fiber.hooks[hookIndex];
@@ -85,9 +80,7 @@ const generateKey = (element: VNode, index: number) => {
 	return `${type}:${identifier}`;
 };
 
-// ORIGINAL RECONCILIATION LOGIC - UNCHANGED
 function recouncilChildren(elements: VNode[], wipFiber: FiberNode) {
-	let index = 0;
 	let prevSibling: Maybe<FiberNode> = null;
 
 	const oldFiberMap = new Map<string | number, FiberNode>();

@@ -1,5 +1,5 @@
-import { FunctionComponent, Props } from "../types/types";
 import Miku from "../index";
+import { FunctionComponent, Props } from "../types/types";
 
 export function Router({
 	path,
@@ -11,20 +11,18 @@ export function Router({
 	[key: string]: any;
 }) {
 	const url = new URL(window.location.href);
-	const slugs = path.split("/");
-	const currentSlugs = url.pathname.split("/");
-
+	const slugs = path.split("/").filter((s) => s.trim().length > 0);
+	const currentSlugs = url.pathname
+		.split("/")
+		.filter((s) => s.trim().length > 0);
 	if (
+		currentSlugs.length === slugs.length &&
 		currentSlugs.every(
 			(e, i) =>
 				e.toLowerCase() == slugs[i]?.toLowerCase() || slugs[i]?.startsWith(":"),
 		)
 	) {
-		{
-			// console.log("slugs", currentSlugs)
-			// console.log("Rendering component for path:", path);
-			return <Component {...rest} />;
-		}
+		return <Component {...rest} />;
 	}
 	return null;
 }
